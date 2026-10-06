@@ -1,6 +1,7 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { visitorHeaders } from '@/shared';
 import { readApiError } from './errors';
 
 const API = () => {
@@ -47,6 +48,7 @@ export async function serverApi<T>(path: string, init: Options = {}): Promise<T 
       ...(token ? { cookie: `${name}=${token}` } : {}),
       'x-irca-client': 'portal',
       'x-forwarded-for': h.get('x-forwarded-for') ?? '',
+      ...visitorHeaders(h.get('x-forwarded-for'), process.env.FORWARDING_KEY),
       ...(rest.body ? { 'content-type': 'application/json' } : {}),
     },
   });

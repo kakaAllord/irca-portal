@@ -1,4 +1,5 @@
 import type { Instrumentation } from 'next';
+import { visitorHeaders } from '@/shared';
 /* eslint-disable no-console -- the portal's own log is the last place an unreported error can go */
 
 /**
@@ -61,6 +62,7 @@ export const onRequestError: Instrumentation.onRequestError = async (err, reques
         'content-type': 'application/json',
         'x-irca-client': 'portal',
         'x-forwarded-for': header(request.headers['x-forwarded-for']),
+        ...visitorHeaders(header(request.headers['x-forwarded-for']), process.env.FORWARDING_KEY),
       },
       body: JSON.stringify({
         source: 'server',
