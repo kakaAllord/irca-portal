@@ -1,0 +1,59 @@
+# Updates arrive as pull requests, which CI checks like any other change.
+# Weekly rather than daily: a wall of pull requests on a Monday gets ignored,
+# and being ignored is how a security update sits unmerged for a month.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Africa/Dar_es_Salaam
+    open-pull-requests-limit: 5
+    # Groups take minor and patch releases only: one major inside a group
+    # (TypeScript 7 in October 2026) failed npm ci and held back every other
+    # update in it. A major arrives as its own pull request instead.
+    groups:
+      # One pull request for the things that always move together, so a Next
+      # or a Prisma bump is reviewed as the single change it really is.
+      next:
+        patterns: ['next', 'react', 'react-dom', 'eslint-config-next', '@types/react*']
+        update-types: ['minor', 'patch']
+      dev:
+        dependency-type: development
+        update-types: ['minor', 'patch']
+    # Majors that are upgrades to plan, not updates to merge (6 Oct 2026):
+    # TypeScript 7 is not yet supported by typescript-eslint, @types/node must
+    # follow the Node the server runs (24), and ESLint 10 and Vitest 5 change
+    # their configuration. supertest 7.3 closes its server under overlapping
+    # requests and breaks the upload tests; 7.2 is held until that is fixed.
+    ignore:
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+      - dependency-name: eslint
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@eslint/js'
+        update-types: ['version-update:semver-major']
+      - dependency-name: globals
+        update-types: ['version-update:semver-major']
+      - dependency-name: vitest
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@vitest/*'
+        update-types: ['version-update:semver-major']
+      - dependency-name: vite-tsconfig-paths
+        update-types: ['version-update:semver-major']
+      - dependency-name: concurrently
+        update-types: ['version-update:semver-major']
+      - dependency-name: dotenv
+        update-types: ['version-update:semver-major']
+      - dependency-name: supertest
+        versions: ['7.3.x']
+    labels: ['dependencies']
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly
+    labels: ['dependencies']

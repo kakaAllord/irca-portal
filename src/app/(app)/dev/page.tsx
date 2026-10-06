@@ -1,0 +1,242 @@
+import type { Metadata } from 'next';
+import type { MeResponse } from '@/shared';
+import { serverApi } from '@/lib/api/server';
+import { can } from '@/lib/auth/guards';
+import { PageHeader } from '@/components/shell/PageHeader';
+import { ForbiddenState } from '@/components/shell/States';
+import { Alert } from '@/components/ui/Alert';
+import { Badge } from '@/components/ui/Badge';
+import { Table, Row, Cell } from '@/components/ui/Table';
+import { BarList, LineChart } from '@/modules/dev/components/Charts';
+import { ago, bytes, number, type Health, type MigrationState } from '@/modules/dev/types';
+
+export const metadata: Metadata = { title: 'Health' };
+
+export default async function HealthPage() {
+  const me = await serverApi<MeResponse>('/auth/me');
+  if (!can(me, 'dev.health.read')) return <ForbiddenState what="the health page" />;
+
+  const health = await serverApi<Health>('/dev/health');
+  const requests = health.errors.reduce((sum, d) => sum + d.requests, 0);
+  const failures = health.errors.reduce((sum, d) => sum + d.errors, 0);
+  const rate = requests ? (failures / requests) * 100 : 0;
+  const waiting = (health.outbox.PENDING ?? 0) + (health.outbox.RETRY ?? 0);
+
+  return (
+    <>
+      <PageHeader
+        title="Health"
+        subtitle="The database, the jobs, the email and text queues and the SMS credit, as they are right now."
+      />
+
+      <Migrations state={health.migrations} />
+
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Figure label="Database" value={bytes(health.database.bytes)} />
+        <Figure label="Connections open" value={number(health.database.connections)} />
+        <Figure
+          label="Failed requests (14 days)"
+          value={`${rate.toFixed(2)}%`}
+          tone={rate > 1 ? 'bad' : 'fine'}
+        />
+        <Figure
+          label="Emails waiting"
+          value={number(waiting)}
+          tone={(health.outbox.FAILED ?? 0) > 0 ? 'bad' : 'fine'}
+        />
+        <Figure
+          label="Texts waiting"
+          value={number((health.sms.queue.PENDING ?? 0) + (health.sms.queue.SENDING ?? 0))}
+          tone={(health.sms.queue.FAILED ?? 0) > 0 ? 'bad' : 'fine'}
+        />
+        <Figure
+          label="SMS credit left"
+          value={health.sms.credit ? `${number(health.sms.credit.amount)} TZS` : 'Not read yet'}
+        />
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className="rounded-[10px] border border-border bg-surface p-4">
+          <h2 className="mb-3 text-[13px] font-semibold text-fg">Requests and failures</h2>
+          <LineChart
+            series={[
+              {
+                metric: 'requests',
+                points: health.errors.map((e) => ({ day: e.day, value: e.requests })),
+              },
+              {
+                metric: 'errors',
+                points: health.errors.map((e) => ({ day: e.day, value: e.errors })),
+              },
+            ]}
+            labels={{ requests: 'Requests', errors: 'Failures' }}
+          />
+        </section>
+
+        <section className="rounded-[10px] border border-border bg-surface p-4">
+          <h2 className="mb-3 text-[13px] font-semibold text-fg">Biggest tables</h2>
+          <BarList
+            rows={health.database.tables.slice(0, 10).map((t) => ({
+              label: t.table.replace(/_/g, ' '),
+              value: t.bytes,
+              hint: bytes(t.bytes),
+            }))}
+          />
+        </section>
+      </div>
+
+      <section className="mt-5">
+        <h2 className="mb-2 text-[13px] font-semibold text-fg">Jobs</h2>
+        <Table head={['Job', 'Last run', 'Took', '']}>
+          {health.jobs.map((job) => (
+            <Row key={job.job}>
+              <Cell>
+                <span className="font-medium text-fg">{job.job}</span>
+                {job.error && <p className="mt-0.5 text-[11.5px] text-danger">{job.error}</p>}
+              </Cell>
+              <Cell nowrap>
+                <span className="text-fg2">{ago(job.lastRunAt)}</span>
+              </Cell>
+              <Cell nowrap>
+                <span className="text-fg2 tabular-nums">
+                  {job.durationMs === null ? 'still running' : `${number(job.durationMs)} ms`}
+                </span>
+              </Cell>
+              <Cell nowrap>
+                {job.ok === false && <Badge tone="danger">Failed</Badge>}
+                {job.ok === true && <Badge tone="positive">Fine</Badge>}
+              </Cell>
+            </Row>
+          ))}
+        </Table>
+      </section>
+
+      <section className="mt-5">
+        <h2 className="mb-2 text-[13px] font-semibold text-fg">Email queue</h2>
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(health.outbox).map(([status, count]) => (
+            <span
+              key={status}
+              className="rounded-[8px] border border-border bg-surface px-3 py-2 text-[12.5px] text-fg2"
+            >
+              {status.toLowerCase()}: <span className="font-semibold text-fg">{number(count)}</span>
+            </span>
+          ))}
+          {!Object.keys(health.outbox).length && (
+            <p className="text-[12.5px] text-fg3">Nothing in the queue.</p>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-5">
+        <h2 className="mb-2 text-[13px] font-semibold text-fg">Slowest queries</h2>
+        {health.slowQueries === null ? (
+          <p className="text-[12.5px] text-fg3">
+            Postgres is not keeping query statistics here. Turn on pg_stat_statements to see them.
+          </p>
+        ) : (
+          <Table head={['Query', 'Calls', 'Average', 'Total']}>
+            {health.slowQueries.map((q) => (
+              <Row key={q.query}>
+                <Cell>
+                  <code
+                    className="block max-w-[520px] truncate font-mono text-[11.5px] text-fg2"
+                    title={q.query}
+                  >
+                    {q.query}
+                  </code>
+                </Cell>
+                <Cell nowrap>
+                  <span className="tabular-nums text-fg2">{number(q.calls)}</span>
+                </Cell>
+                <Cell nowrap>
+                  <span className="tabular-nums text-fg2">{q.meanMs.toFixed(1)} ms</span>
+                </Cell>
+                <Cell nowrap>
+                  <span className="tabular-nums text-fg3">{number(Math.round(q.totalMs))} ms</span>
+                </Cell>
+              </Row>
+            ))}
+          </Table>
+        )}
+      </section>
+    </>
+  );
+}
+
+/**
+ * Red, at the top, when the database lacks a migration this build needs:
+ * every page touching the missing tables fails until it is run, and that is
+ * the first thing to know about why the portal is misbehaving.
+ */
+function Migrations({ state }: { state: MigrationState }) {
+  if (state.unknown) {
+    return (
+      <div className="mb-5">
+        <Alert tone="warn">Could not check the database&apos;s migrations: {state.unknown}.</Alert>
+      </div>
+    );
+  }
+  if (!state.behind.length && !state.ahead.length) return null;
+  return (
+    <section
+      role="alert"
+      className="mb-5 rounded-[10px] border border-danger-br bg-danger-bg p-4 text-[12.5px] text-fg2"
+    >
+      {state.behind.length > 0 && (
+        <>
+          <h2 className="text-[14px] font-semibold text-danger">
+            The database is {state.atLeast ? 'at least ' : ''}
+            {state.behind.length} migration{state.behind.length === 1 ? '' : 's'} behind
+          </h2>
+          <p className="mt-1">
+            Pages that read what these add will fail until they are applied. Run this where the API
+            runs:
+          </p>
+          <code className="mt-2 inline-block rounded-[6px] bg-surface px-2 py-1 font-mono text-[12px] text-fg">
+            {state.fix}
+          </code>
+          <ul className="mt-2 list-disc pl-5 font-mono text-[11.5px]">
+            {state.behind.map((name) => (
+              <li key={name}>{name}</li>
+            ))}
+          </ul>
+          {state.atLeast && (
+            <p className="mt-2">
+              The database is older than the check itself, so there may be more than these.
+            </p>
+          )}
+        </>
+      )}
+      {state.ahead.length > 0 && (
+        <p className={state.behind.length ? 'mt-3' : ''}>
+          The database also has {state.ahead.length} migration
+          {state.ahead.length === 1 ? '' : 's'} this build does not know (
+          <span className="font-mono">{state.ahead.join(', ')}</span>): the API is older than the
+          database, as after rolling a deploy back.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Figure({
+  label,
+  value,
+  tone = 'fine',
+}: {
+  label: string;
+  value: string;
+  tone?: 'fine' | 'bad';
+}) {
+  return (
+    <div className="rounded-[10px] border border-border bg-surface p-3.5">
+      <p className="text-[11px] font-semibold tracking-wide text-fg3 uppercase">{label}</p>
+      <p
+        className={`mt-1 text-[19px] font-semibold tabular-nums ${tone === 'bad' ? 'text-danger' : 'text-fg'}`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}

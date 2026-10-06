@@ -1,0 +1,149 @@
+/**
+ * A module (a "portal" to the people using it) describes itself here: what it
+ * lets people do, the roles it ships with, and the pages it adds to the
+ * sidebar. Code checks permissions, never role names, so a church can invent
+ * roles without a deploy, but never a permission nothing checks.
+ */
+export type PermissionKind = 'read' | 'write';
+
+export type PermissionDef = {
+  kind: PermissionKind;
+  /** Shown to administrators in the role editor, in plain words. */
+  label: string;
+  /** A longer note, for permissions that deserve a second thought. */
+  hint?: string;
+  /**
+   * Held by leading a department, never by a role (D28). The permission
+   * resolver adds it for as long as someone leads one, and the role editor
+   * does not offer it, so a leader who steps down cannot keep it by accident.
+   */
+  fromLeadership?: true;
+};
+
+/**
+ * The drawings the sidebar has. A module picks one by name rather than
+ * shipping a picture, so every portal's sidebar is drawn in one style and a
+ * name nothing can draw does not compile.
+ */
+export type NavIcon =
+  | 'dashboard'
+  | 'applications'
+  | 'discipleship'
+  | 'insights'
+  | 'overview'
+  | 'transactions'
+  | 'lists'
+  | 'requests'
+  | 'reports'
+  | 'people'
+  | 'roles'
+  | 'portals'
+  | 'activity'
+  | 'terminal'
+  | 'health'
+  | 'usage'
+  | 'settings'
+  | 'departments'
+  | 'messages'
+  | 'templates'
+  | 'schedule'
+  | 'sessions'
+  | 'training'
+  | 'pledges'
+  | 'accounts'
+  | 'budgets'
+  | 'errors'
+  | 'access'
+  | 'prayers';
+
+export type NavItem = {
+  label: string;
+  /** Absolute portal path, e.g. /finance/transactions. */
+  href: string;
+  /** Which of the sidebar's drawings goes beside it. */
+  icon: NavIcon;
+  /** Shown only to people who hold this permission. */
+  permission: string;
+  /**
+   * A list that opens under the item in the sidebar. 'departments' is every
+   * department, which the session sends to those who oversee them (14.2).
+   */
+  children?: 'departments';
+};
+
+export type SystemRoleDef = {
+  /** Stable id, e.g. finance.clerk. Never rename: roles are matched by it. */
+  key: string;
+  name: string;
+  description: string;
+  permissions: string[];
+};
+
+export type ModuleDef = {
+  key: string;
+  name: string;
+  description: string;
+  /**
+   * Core modules cannot be turned off and belong to no department: admin,
+   * the dev console, and the leaders' own pages. A department module is
+   * switched on for the department it belongs to (D28).
+   */
+  kind: 'core' | 'department';
+  /** Where the module opens. */
+  home: string;
+  permissions: Record<string, PermissionDef>;
+  systemRoles: SystemRoleDef[];
+  /**
+   * What the leaders of the department this portal belongs to may do in it,
+   * without any role (D29). Ordinary permissions of this module, so a role
+   * may hold them too; leaders simply have them for as long as they lead,
+   * and lose them the moment they stop.
+   */
+  leaders?: { description: string; permissions: string[] };
+  /**
+   * What the members of that department may do in it, without any role
+   * (D31): an administrator adds them in Admin → Departments, and being a
+   * member gives these for as long as they are one. Resolved exactly like
+   * `leaders`.
+   */
+  members?: { description: string; permissions: string[] };
+  nav: NavItem[];
+};
+
+export function defineModule<const M extends ModuleDef>(m: M): M {
+  for (const key of Object.keys(m.permissions)) {
+    // Ownership has to be readable from the string alone, and two modules must
+    // never be able to collide.
+    if (!key.startsWith(`${m.key}.`)) throw new Error(`${key} does not belong to module ${m.key}`);
+  }
+  for (const role of m.systemRoles) {
+    for (const p of role.permissions) {
+      if (!(p in m.permissions)) throw new Error(`Role ${role.key} uses unknown permission ${p}`);
+      if (m.permissions[p]!.fromLeadership) {
+        throw new Error(`Role ${role.key} cannot hold ${p}: it comes from leading a department`);
+      }
+    }
+  }
+  for (const [who, place] of [
+    ['Leaders', m.leaders],
+    ['Members', m.members],
+  ] as const) {
+    if (!place) continue;
+    // A core portal belongs to no department, so it has nobody in one.
+    if (m.kind === 'core') throw new Error(`${m.key} is core and belongs to no department`);
+    for (const p of place.permissions) {
+      if (!(p in m.permissions)) throw new Error(`${who} of ${m.key} use unknown permission ${p}`);
+      if (m.permissions[p]!.fromLeadership) {
+        throw new Error(
+          `${who} of ${m.key} would hold ${p}, which comes from leading any department`,
+        );
+      }
+    }
+  }
+  for (const item of m.nav) {
+    if (!(item.permission in m.permissions)) {
+      throw new Error(`Nav ${item.href} uses unknown permission ${item.permission}`);
+    }
+  }
+  return m;
+}

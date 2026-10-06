@@ -1,0 +1,245 @@
+import type { NavIcon as Name } from '@/shared';
+
+/**
+ * The sidebar's drawings.
+ *
+ * Hand-drawn rather than a library: there are a dozen of them, they are all
+ * the same weight and grid, and a page of the portal should not carry an icon
+ * package to show twelve outlines. A module names the one it wants
+ * (`icon: 'reports'`), and a name nothing here draws does not compile.
+ */
+export function NavIcon({ name, size = 14 }: { name: Name; size?: number }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {PATHS[name]}
+    </svg>
+  );
+}
+
+const PATHS: Record<Name, React.ReactNode> = {
+  // A house: where a portal starts.
+  dashboard: (
+    <>
+      <path d="M3 10.5 12 3l9 7.5" />
+      <path d="M5.5 9.3V20h13V9.3" />
+      <path d="M9.8 20v-5.4h4.4V20" />
+    </>
+  ),
+  // A form with a tick: someone asking to join.
+  applications: (
+    <>
+      <path d="M6 3h9l4 4v14H6Z" />
+      <path d="M14 3v4h4" />
+      <path d="m9 14 2 2 4-4" />
+    </>
+  ),
+  // Footsteps, one after another: the foundation class.
+  discipleship: (
+    <>
+      <path d="M12 21V3" />
+      <path d="M12 7H8.5a2.5 2.5 0 0 1 0-5H12M12 13h3.5a2.5 2.5 0 0 0 0-5H12" />
+      <circle cx="12" cy="18.5" r="2" />
+    </>
+  ),
+  // A rising line: what the form tells you.
+  insights: (
+    <>
+      <path d="M3 3v18h18" />
+      <path d="m7 15 4-5 3.5 3L20 7" />
+    </>
+  ),
+  // Bars: how the month went.
+  overview: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
+  // A receipt with its torn edge.
+  transactions: (
+    <>
+      <path d="M5 3h14v18l-2.3-1.6-2.3 1.6-2.4-1.6L9.6 21l-2.3-1.6L5 21Z" />
+      <path d="M9 8h6M9 12h6" />
+    </>
+  ),
+  // A list with its bullets.
+  lists: <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />,
+  // An in-tray: what is waiting for someone.
+  requests: (
+    <>
+      <path d="M3 13h5l1.5 3h5L16 13h5" />
+      <path d="M5.5 5h13l2.5 8v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5Z" />
+    </>
+  ),
+  // A sheet with lines: the statement.
+  reports: (
+    <>
+      <path d="M6 2h8l4 4v16H6Z" />
+      <path d="M14 2v4h4M9.5 12h5M9.5 16h5" />
+    </>
+  ),
+  // Two people.
+  people: (
+    <>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3 20c0-3.2 2.7-5.2 6-5.2s6 2 6 5.2" />
+      <path d="M16 5.2a3.2 3.2 0 0 1 0 6.1M17.5 14.4c2.1.7 3.5 2.4 3.5 4.6" />
+    </>
+  ),
+  // A key: what someone is allowed to open.
+  roles: (
+    <>
+      <circle cx="8" cy="8" r="4" />
+      <path d="M11 11l8 8M16.5 16.5l2-2M14 14l2-2" />
+    </>
+  ),
+  // Four panels: the portals a church has.
+  portals: (
+    <>
+      <rect x="3" y="3" width="7.5" height="7.5" rx="1.5" />
+      <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" />
+      <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" />
+      <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" />
+    </>
+  ),
+  // A clock turned back: what has happened.
+  activity: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5.2l3.4 2" />
+    </>
+  ),
+  // A building with a cross: the churches on the platform.
+  // A prompt: the dev console.
+  terminal: (
+    <>
+      <rect x="2.5" y="4" width="19" height="16" rx="2" />
+      <path d="M7 9.5l3 2.5-3 2.5M12.5 15h4.5" />
+    </>
+  ),
+  // A pulse.
+  health: <path d="M2 12h4l2.5-6 4 13L15.5 12H22" />,
+  // A warning sign: something someone was shown went wrong.
+  errors: (
+    <>
+      <path d="M10.3 3.9 2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+      <path d="M12 9.5v4.2" />
+      <path d="M12 17.2h.01" />
+    </>
+  ),
+  // A key: who holds what.
+  access: (
+    <>
+      <circle cx="8" cy="15" r="4" />
+      <path d="m10.9 12.1 8.6-8.6" />
+      <path d="m16.5 7 2.5 2.5" />
+      <path d="m14 9.5 2 2" />
+    </>
+  ),
+  // Two hands pressed together: what people asked the pastors to pray for.
+  prayers: (
+    <>
+      <path d="M12 9.5 9.5 4.8a1.4 1.4 0 0 0-2.5 1.1l1.2 4.6-2.4 3.6V19l3 2" />
+      <path d="M12 9.5l2.5-4.7a1.4 1.4 0 0 1 2.5 1.1l-1.2 4.6 2.4 3.6V19l-3 2" />
+      <path d="M12 9.5V17" />
+    </>
+  ),
+  // A dial with its needle: how much of everything is being used.
+  usage: (
+    <>
+      <path d="M3.5 17a8.5 8.5 0 1 1 17 0" />
+      <path d="m12 17 4.2-5.2" />
+      <path d="M3 20h18" />
+    </>
+  ),
+  // Three sliders, each set somewhere: the settings made once and left.
+  settings: (
+    <>
+      <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" />
+      <circle cx="15" cy="6" r="2" />
+      <circle cx="9" cy="12" r="2" />
+      <circle cx="17" cy="18" r="2" />
+    </>
+  ),
+  // One in front and two behind: a department, its leader and its members.
+  departments: (
+    <>
+      <circle cx="12" cy="9" r="2.8" />
+      <path d="M7 20c0-2.9 2.2-4.8 5-4.8s5 1.9 5 4.8" />
+      <circle cx="5.5" cy="7" r="2.1" />
+      <circle cx="18.5" cy="7" r="2.1" />
+      <path d="M2.5 15.5c.4-1.9 1.6-3 3.2-3.3M21.5 15.5c-.4-1.9-1.6-3-3.2-3.3" />
+    </>
+  ),
+  // An envelope: a message to write.
+  messages: (
+    <>
+      <rect x="3" y="5.5" width="18" height="13" rx="2" />
+      <path d="m3.5 7 8.5 6 8.5-6" />
+    </>
+  ),
+  // A page with a star: words that were approved.
+  templates: (
+    <>
+      <path d="M6 3h9l4 4v14H6Z" />
+      <path d="M14 3v4h4" />
+      <path d="m12.5 11 1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3Z" />
+    </>
+  ),
+  // Two arrows chasing each other: something that comes round again. (Not a
+  // clock: History already is one.)
+  schedule: (
+    <>
+      <path d="m17 2 3 3-3 3" />
+      <path d="M4 11V9a4 4 0 0 1 4-4h12" />
+      <path d="m7 22-3-3 3-3" />
+      <path d="M20 13v2a4 4 0 0 1-4 4H4" />
+    </>
+  ),
+  // A map pin at the end of a winding road: a GO day out in the area.
+  sessions: (
+    <>
+      <path d="M17 3.5a3.5 3.5 0 0 0-3.5 3.5c0 2.6 3.5 6 3.5 6s3.5-3.4 3.5-6A3.5 3.5 0 0 0 17 3.5Z" />
+      <circle cx="17" cy="7" r="1" />
+      <path d="M17 17H8a2.5 2.5 0 0 1 0-5h2.5a2.5 2.5 0 0 0 0-5H4" />
+      <path d="M4 21h13" />
+    </>
+  ),
+  // A board with someone beside it: the Friday training.
+  training: (
+    <>
+      <path d="M9 4h12v10H9" />
+      <path d="m13 14-1.5 4M17 14l1.5 4" />
+      <circle cx="5" cy="8" r="2" />
+      <path d="M2 20v-4.5A2.5 2.5 0 0 1 4.5 13H7l3-2" />
+    </>
+  ),
+  // An open hand with a coin above it: something promised.
+  pledges: (
+    <>
+      <circle cx="14" cy="6" r="3" />
+      <path d="M2 14h3l4 1.5h3.5a1.5 1.5 0 0 1 0 3H9" />
+      <path d="m12.5 18.5 5.5-2.5a1.8 1.8 0 0 1 2 3l-6.5 3.5H5L2 21" />
+    </>
+  ),
+  // A pie with a slice out: what each department is given.
+  budgets: (
+    <>
+      <path d="M12 3a9 9 0 1 0 9 9h-9Z" />
+      <path d="M15 2.5A7 7 0 0 1 21.5 9H15Z" />
+    </>
+  ),
+  // A wallet: where money is held.
+  accounts: (
+    <>
+      <path d="M4 7.5h14.5A1.5 1.5 0 0 1 20 9v10a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19V7.5Z" />
+      <path d="M4 7.5 15.5 4v3.5" />
+      <path d="M20 12h-4a2 2 0 0 0 0 4h4" />
+    </>
+  ),
+};

@@ -1,0 +1,237 @@
+import { expect, test } from '@playwright/test';
+
+const DEV = { email: 'dev@irca.local', password: 'dev-password-123' };
+const ADMIN = { email: 'admin@irca.local', password: 'admin-password-123' };
+
+async function signIn(page: import('@playwright/test').Page, who: typeof DEV) {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(who.email);
+  await page.getByLabel('Password').fill(who.password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page.getByRole('navigation', { name: 'Portals' })).toBeVisible();
+}
+
+test.describe('the dev console', () => {
+  test('health and logs show real numbers, and the developer has no admin section', async ({
+    page,
+  }) => {
+    await signIn(page, DEV);
+
+    await page.getByRole('link', { name: 'Health', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Health', level: 1 })).toBeVisible();
+    await expect(page.getByText('Database', { exact: true })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Logs', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Logs', level: 1 })).toBeVisible();
+
+    // D43: viewing as someone covers what the developer needs to see.
+    for (const name of ['People', 'Departments', 'Activity', 'Requests']) {
+      await expect(page.getByRole('link', { name, exact: true })).toHaveCount(0);
+    }
+    await page.goto('/admin/users');
+    await expect(page.getByText("You don't have access")).toBeVisible();
+  });
+
+  test('the developer looks up an error', async ({ browser, page }) => {
+    // Someone's page fails in their browser; the page sends it with the
+    // reference it shows them (docs/plan/11, steps 11.3 to 11.5).
+    const clerk = await browser.newPage();
+    await signIn(clerk, { email: 'clerk@irca.local', password: 'clerk-password-123' });
+    const reference = `B${Date.now().toString().slice(-10)}`;
+    const sent = await clerk.request.post('/api/errors', {
+      headers: { 'x-irca-client': 'portal' },
+      data: {
+        source: 'browser',
+        reference,
+        message: "TypeError: Cannot read properties of undefined (reading 'amount')",
+        path: '/finance/transactions',
+      },
+    });
+    expect(sent.status()).toBe(204);
+    await clerk.close();
+
+    // They send the whole sentence; the developer pastes it as it came.
+    await signIn(page, DEV);
+    await page.getByRole('link', { name: 'Errors', exact: true }).click();
+    await page
+      .getByLabel('Reference')
+      .fill(`Something went wrong. Send this to your developer: ${reference} Copy`);
+    await page.getByRole('button', { name: 'Look up' }).click();
+    await expect(page.getByRole('heading', { name: 'What they saw' })).toBeVisible();
+    await expect(page.getByText('Neema Mollel <clerk@irca.local>')).toBeVisible();
+    await expect(page.getByText(/reading 'amount'/).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: new RegExp(reference) })).toBeVisible();
+
+    await page.getByLabel('Reference').fill('0000000001');
+    await page.getByRole('button', { name: 'Look up' }).click();
+    await expect(page.getByText(/No error with this reference/)).toBeVisible();
+  });
+
+  test('viewing as someone, then reading it back in the view-as log and the logs', async ({
+    browser,
+    page,
+  }) => {
+    // An administrator views as the finance clerk from her own page.
+    const admin = await browser.newPage();
+    await signIn(admin, ADMIN);
+    await admin.getByRole('link', { name: 'People', exact: true }).click();
+    await admin.getByRole('link', { name: 'Neema Mollel clerk@irca.local' }).click();
+    await admin.getByRole('button', { name: 'View as Neema' }).click();
+    await expect(admin.getByText('Viewing as Neema Mollel', { exact: true })).toBeVisible();
+    await admin.getByRole('status').getByRole('button', { name: 'Back to my view' }).click();
+    await expect(admin.getByText('Viewing as Neema Mollel', { exact: true })).toHaveCount(0);
+    await admin.close();
+
+    await signIn(page, DEV);
+    // The view-as log is the only place that session shows up: a list now,
+    // each session opening to the pages seen in it (docs/plan/11, 11.6).
+    await page.getByRole('link', { name: 'View-as log' }).click();
+    const session = page.getByRole('button', { name: /IRCA Admin viewed as Neema Mollel/ });
+    await session.first().click();
+    const drawer = page.getByRole('dialog');
+    await expect(drawer.getByText('Neema Mollel <clerk@irca.local>')).toBeVisible();
+    await expect(drawer.getByText(/pages? seen, in order/)).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    // The terminal moved to Logs, with commands of its own.
+    await page.getByRole('link', { name: 'Logs', exact: true }).click();
+    const field = page.getByLabel('Command');
+    await field.fill('help');
+    await field.press('Enter');
+    await expect(page.getByText('what people did, newest first')).toBeVisible();
+
+    // The suite's API writes only errors, so what tail can promise is its count.
+    await field.fill('tail 20');
+    await field.press('Enter');
+    await expect(page.getByText(/^\d+ of \d+ lines held\.$/)).toBeVisible();
+
+    await field.fill('sudo rm -rf /');
+    await field.press('Enter');
+    await expect(page.getByText('"sudo" is not a command. Type help.')).toBeVisible();
+
+    // The last thing typed comes back on the up arrow.
+    await field.press('ArrowUp');
+    await expect(field).toHaveValue('sudo rm -rf /');
+  });
+
+  test('usage, tab by tab', async ({ page }) => {
+    await signIn(page, DEV);
+    await page.getByRole('link', { name: 'Usage', exact: true }).click();
+    await expect(page.getByText('Staff active today')).toBeVisible();
+    await expect(page.getByText('Requests by portal')).toBeVisible();
+
+    const tabs = page.getByRole('navigation', { name: 'Usage' });
+    await tabs.getByRole('link', { name: 'Every number' }).click();
+    await page.getByRole('button', { name: 'Failed sign-ins' }).click();
+    await expect(page).toHaveURL(/metrics=.*auth\.login_failures/);
+    await expect(page.getByText('Failed sign-ins').last()).toBeVisible();
+
+    // Counts reach the database once a minute, so this run's own requests may
+    // not be there yet; the API tests check the numbers themselves.
+    await tabs.getByRole('link', { name: 'API' }).click();
+    await expect(page.getByRole('heading', { name: 'Busiest routes' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Slowest routes' })).toBeVisible();
+
+    await tabs.getByRole('link', { name: 'Sign-ins' }).click();
+    await expect(page.getByText('Wrong passwords', { exact: true }).first()).toBeVisible();
+    await tabs.getByRole('link', { name: 'Email' }).click();
+    await expect(page.getByText('The last 50')).toBeVisible();
+    // No whole address ever reaches the page.
+    await expect(page.getByText(/[a-z]{3,}@irca\.local/)).toHaveCount(0);
+  });
+
+  test('the church settings and the registration keys', async ({ page }) => {
+    await signIn(page, DEV);
+    await page.getByRole('link', { name: 'Settings', exact: true }).click();
+
+    await page.getByRole('button', { name: 'Edit' }).click();
+    const drawer = page.getByRole('dialog');
+    await drawer.getByLabel('Timezone').fill('Mars/Olympus');
+    await drawer.getByRole('button', { name: 'Save' }).click();
+    await expect(drawer.getByText(/not a timezone/).first()).toBeVisible();
+    await drawer.getByLabel('Timezone').fill('Africa/Dar_es_Salaam');
+    await drawer.getByLabel('Name').fill('IRCA, renamed for a moment');
+    await drawer.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByRole('main').getByText('IRCA, renamed for a moment')).toBeVisible();
+    // Put it back, so other journeys read the name they expect.
+    await page.getByRole('button', { name: 'Edit' }).click();
+    await drawer.getByLabel('Name').fill('International Revival Church Arusha');
+    await drawer.getByRole('button', { name: 'Save' }).click();
+    await expect(
+      page.getByRole('main').getByText('International Revival Church Arusha'),
+    ).toBeVisible();
+
+    // Named for this run: the test database keeps the keys earlier runs made.
+    const name = `Made by a browser test ${Date.now()}`;
+    await page.getByRole('button', { name: '+ New key' }).click();
+    await page.getByRole('dialog').getByLabel('Name').fill(name);
+    await page.getByRole('button', { name: 'Make the key' }).click();
+    await expect(page.getByText('Copy this key now. It is not shown again.')).toBeVisible();
+    await page.getByRole('button', { name: 'I have copied it' }).click();
+    const row = page.getByRole('row', { name: new RegExp(name) });
+    await row.getByRole('button', { name: 'Revoke' }).click();
+    await page.getByRole('button', { name: 'Revoke it' }).click();
+    await expect(row.getByText('Revoked')).toBeVisible();
+  });
+
+  test('alerts: who hears, the storage size, and a test sent on purpose', async ({ page }) => {
+    await signIn(page, DEV);
+    await page.getByRole('link', { name: 'Settings', exact: true }).click();
+    const alerts = page.locator('section', { has: page.getByRole('heading', { name: 'Alerts' }) });
+
+    // The developer may read the Health page, so they hear.
+    await expect(alerts.getByText(DEV.email)).toBeVisible();
+
+    await alerts.getByRole('button', { name: 'Set the size' }).click();
+    const drawer = page.getByRole('dialog');
+    await drawer.getByLabel('Storage (GB)').fill('0');
+    await drawer.getByRole('button', { name: 'Save' }).click();
+    await expect(drawer.getByText('More than 0')).toBeVisible();
+    await drawer.getByLabel('Storage (GB)').fill('5');
+    await drawer.getByRole('button', { name: 'Save' }).click();
+    await expect(alerts.getByText('5 GB, alert past 80%')).toBeVisible();
+    // Put it back, so the next run starts from nothing set.
+    await alerts.getByRole('button', { name: 'Set the size' }).click();
+    await drawer.getByLabel('Storage (GB)').fill('');
+    await drawer.getByRole('button', { name: 'Save' }).click();
+    await expect(alerts.getByText('not set, so not watched')).toBeVisible();
+
+    await alerts.getByRole('button', { name: 'Send a test alert' }).click();
+    await expect(
+      alerts.getByText(/^Sent: \d+ emails? and \d+ texts?\. Check they arrived\.$/),
+    ).toBeVisible();
+  });
+
+  test('who holds what, and every role, read-only on Dev → Access', async ({ page }) => {
+    await signIn(page, DEV);
+    await page.getByRole('link', { name: 'Access', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Access', level: 1 })).toBeVisible();
+    await expect(page.getByText('Church administrator').first()).toBeVisible();
+    await expect(page.getByText('admin.administrator')).toBeVisible();
+    // Nothing on the page changes anything but where the developer is looking.
+    await expect(page.getByRole('button', { name: /Save|Edit|New role/ })).toHaveCount(0);
+
+    // The developer views as someone from here, since People is not theirs.
+    await page.getByRole('button', { name: 'View as Neema Mollel' }).click();
+    await expect(page.getByText('Viewing as Neema Mollel', { exact: true })).toBeVisible();
+    await page.getByRole('status').getByRole('button', { name: 'Back to my view' }).click();
+    await expect(page.getByText('Viewing as Neema Mollel', { exact: true })).toHaveCount(0);
+  });
+
+  test('the dev console is not for an ordinary administrator', async ({ page }) => {
+    await signIn(page, ADMIN);
+    await expect(page.getByRole('link', { name: 'Health', exact: true })).toHaveCount(0);
+    await page.goto('/dev');
+    await expect(page.getByText("You don't have access to the health page")).toBeVisible();
+
+    // Roles left Admin (D43): no Roles in the sidebar, and an old link lands on the Overview.
+    await expect(page.getByRole('link', { name: 'Roles', exact: true })).toHaveCount(0);
+    await page.goto('/admin/roles');
+    await expect(page).toHaveURL(/\/admin$/);
+
+    // Their activity log never shows a view-as line; only the view-as log does.
+    await page.goto('/admin/audit');
+    await expect(page.getByRole('heading', { name: 'Activity', level: 1 })).toBeVisible();
+    await expect(page.getByText(/impersonation\./)).toHaveCount(0);
+  });
+});
