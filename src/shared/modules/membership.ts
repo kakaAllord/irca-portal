@@ -63,6 +63,11 @@ export const membershipModule = defineModule({
       label: 'Run foundation classes: groups, sign-ups and attendance',
     },
     'membership.insights.read': { kind: 'read', label: 'See insights' },
+    'membership.registrations.remind': {
+      kind: 'write',
+      label: 'Send people their link to finish the registration form',
+      hint: 'Copy it, or text it with an approved template, from Registrations and Members (D55).',
+    },
   },
   systemRoles: [
     {
@@ -83,6 +88,7 @@ export const membershipModule = defineModule({
         'membership.discipleship.read',
         'membership.discipleship.manage',
         'membership.insights.read',
+        'membership.registrations.remind',
       ],
     },
     {
@@ -102,6 +108,7 @@ export const membershipModule = defineModule({
         'membership.discipleship.read',
         'membership.discipleship.manage',
         'membership.insights.read',
+        'membership.registrations.remind',
       ],
     },
   ],

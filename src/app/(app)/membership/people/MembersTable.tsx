@@ -8,7 +8,13 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Table, Row, Cell } from '@/components/ui/Table';
 import { SpiritualPills } from '@/modules/membership/components/SpiritualPills';
 import { EnrollDrawer } from '@/modules/membership/components/EnrollDrawer';
-import { RemindMenu } from '@/modules/comms/RemindMenu';
+import { Button } from '@/components/ui/Button';
+import {
+  RowRemind,
+  TextDrawer,
+  useMayRemind,
+  type Recipients,
+} from '@/modules/membership/components/RemindActions';
 import { STAGE_LABEL, day, type PersonDetail, type PersonRow } from '@/modules/membership/types';
 
 /**
@@ -17,19 +23,100 @@ import { STAGE_LABEL, day, type PersonDetail, type PersonRow } from '@/modules/m
  * already left out for anyone who may not read them, so this page never holds
  * a prayer request it should not.
  */
-export function MembersTable({ rows }: { rows: PersonRow[] }) {
+export function MembersTable({ rows, tab }: { rows: PersonRow[]; tab: string }) {
   const [open, setOpen] = useState<string | null>(null);
+  const mayRemind = useMayRemind();
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [texting, setTexting] = useState<Recipients | null>(null);
+
+  // Someone who has not finished the form can be sent their link.
+  const unfinished = rows.filter((p) => !p.complete && p.hasRegistration);
+  const toggle = (id: string) =>
+    setChosen((all) => (all.includes(id) ? all.filter((x) => x !== id) : [...all, id]));
+  const everyoneHere = unfinished.length > 0 && unfinished.every((p) => chosen.includes(p.id));
+  const offerAll = tab === 'incomplete' || tab === 'joining';
+
   return (
-    <Table head={['Name', 'Phone', 'Registered', 'Age', 'Interested in', 'Heard via', '']}>
-      {rows.map((person) => (
-        <MemberRows
-          key={person.id}
-          person={person}
-          shown={open === person.id}
-          onToggle={() => setOpen(open === person.id ? null : person.id)}
+    <>
+      {mayRemind && (unfinished.length > 0 || offerAll) && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-[10px] border border-border bg-surface px-4 py-2.5 text-[12.5px] text-fg2">
+          <span className="mr-auto">
+            {chosen.length
+              ? `${chosen.length} chosen to be sent their link.`
+              : 'Tick people who have not finished the form to text them their link, or text everyone not finished.'}
+          </span>
+          {unfinished.length > 0 && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setChosen(everyoneHere ? [] : unfinished.map((p) => p.id))}
+            >
+              {everyoneHere ? 'Untick all' : 'Tick all on this page'}
+            </Button>
+          )}
+          {chosen.length > 0 && (
+            <Button
+              size="sm"
+              onClick={() =>
+                setTexting({
+                  personIds: chosen,
+                  names: rows.filter((p) => chosen.includes(p.id)).map((p) => p.fullName),
+                })
+              }
+            >
+              Text the {chosen.length} chosen
+            </Button>
+          )}
+          {offerAll && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setTexting({ all: true, joining: tab === 'joining' })}
+            >
+              {tab === 'joining' ? 'Text all joining, not finished' : 'Text everyone not finished'}
+            </Button>
+          )}
+        </div>
+      )}
+      <Table
+        head={[
+          ...(mayRemind
+            ? [
+                <span key="tick" className="sr-only">
+                  Choose
+                </span>,
+              ]
+            : []),
+          'Name',
+          'Phone',
+          'Registered',
+          'Age',
+          'Interested in',
+          'Heard via',
+          '',
+        ]}
+      >
+        {rows.map((person) => (
+          <MemberRows
+            key={person.id}
+            person={person}
+            shown={open === person.id}
+            onToggle={() => setOpen(open === person.id ? null : person.id)}
+            choosable={mayRemind}
+            chosen={chosen.includes(person.id)}
+            onChoose={() => toggle(person.id)}
+          />
+        ))}
+      </Table>
+      {texting && (
+        <TextDrawer
+          open
+          to={texting}
+          onClose={() => setTexting(null)}
+          onSent={() => setChosen([])}
         />
-      ))}
-    </Table>
+      )}
+    </>
   );
 }
 
@@ -37,11 +124,18 @@ function MemberRows({
   person,
   shown,
   onToggle,
+  choosable,
+  chosen,
+  onChoose,
 }: {
   person: PersonRow;
   shown: boolean;
   onToggle: () => void;
+  choosable: boolean;
+  chosen: boolean;
+  onChoose: () => void;
 }) {
+  const unfinished = !person.complete && person.hasRegistration;
   const flags = [
     person.saved.value && 'Saved',
     person.baptised.value && 'Baptised',
@@ -52,6 +146,20 @@ function MemberRows({
   return (
     <>
       <Row onClick={onToggle}>
+        {choosable && (
+          <Cell>
+            {unfinished && (
+              <input
+                type="checkbox"
+                aria-label={`Choose ${person.fullName || 'this person'} to text their link`}
+                checked={chosen}
+                onClick={(e) => e.stopPropagation()}
+                onChange={onChoose}
+                className="size-4 accent-[var(--accent)]"
+              />
+            )}
+          </Cell>
+        )}
         <Cell>
           <span className="flex items-center gap-2.5">
             <span
@@ -87,11 +195,10 @@ function MemberRows({
         </Cell>
         <Cell nowrap>
           {/* An unfinished form can be sent its link from here, in their own
-              language (only for those who may remind, D34). The menu's clicks
-              stay off the row, which would otherwise open. */}
-          {!person.complete && person.hasRegistration && (
-            <span className="mr-1 inline-flex" onClick={(e) => e.stopPropagation()}>
-              <RemindMenu personId={person.id} label="Remind" />
+              language (D55). The buttons' clicks stay off the row. */}
+          {unfinished && (
+            <span className="mr-1 inline-flex">
+              <RowRemind personId={person.id} name={person.fullName} />
             </span>
           )}
           <button
@@ -114,7 +221,7 @@ function MemberRows({
       </Row>
       {shown && (
         <tr className="border-t border-border2 bg-surface2">
-          <Cell colSpan={7}>
+          <Cell colSpan={choosable ? 8 : 7}>
             <Expanded id={person.id} />
           </Cell>
         </tr>
