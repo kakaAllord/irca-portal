@@ -63,7 +63,8 @@ export function Register({ groupId, data }: { groupId: string; data: RegisterDat
         <div>
           <h2 className="text-[13px] font-semibold text-fg">Foundation class register</h2>
           <p className="text-[12px] text-fg3">
-            Only people who signed up. {data.sessions} sessions; a tick is a session attended.
+            Only people who signed up. {data.sessions} sessions; a tick is a session attended,
+            whether the office marked it or they marked themselves through the session&apos;s link.
           </p>
         </div>
         <Can permission="membership.discipleship.manage">
@@ -82,11 +83,26 @@ export function Register({ groupId, data }: { groupId: string; data: RegisterDat
             <thead>
               <tr className="text-left text-[11px] text-fg3">
                 <th className="py-1.5 pr-3 font-semibold">Person</th>
-                {Array.from({ length: data.sessions }, (_, i) => (
-                  <th key={i} className="w-9 py-1.5 text-center font-semibold">
-                    {i + 1}
-                  </th>
-                ))}
+                {Array.from({ length: data.sessions }, (_, i) => {
+                  const date = data.dates[String(i + 1)];
+                  return (
+                    <th
+                      key={i}
+                      className="w-11 py-1.5 text-center font-semibold"
+                      title={date ? new Date(date).toLocaleString('en-GB') : undefined}
+                    >
+                      {i + 1}
+                      {date && (
+                        <span className="block text-[10px] font-normal text-fg3">
+                          {new Date(date).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </span>
+                      )}
+                    </th>
+                  );
+                })}
                 <th className="py-1.5 pl-3 text-right font-semibold">Done</th>
               </tr>
             </thead>
@@ -111,7 +127,7 @@ export function Register({ groupId, data }: { groupId: string; data: RegisterDat
                     </td>
                   ))}
                   <td className="py-1.5 pl-3 text-right tabular-nums text-fg2">
-                    {row.completed ? 'Finished' : `${row.attended} / ${data.sessions}`}
+                    {row.completed ? 'Finished' : `${row.attended} / ${data.needed}`}
                   </td>
                 </tr>
               ))}
@@ -167,6 +183,7 @@ export function NewGroup() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
+  const [meetUrl, setMeetUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -174,9 +191,13 @@ export function NewGroup() {
     setBusy(true);
     setError(null);
     try {
-      await clientApi('/membership/discipleship/groups', { method: 'POST', body: { name } });
+      await clientApi('/membership/discipleship/groups', {
+        method: 'POST',
+        body: { name, meetUrl },
+      });
       setOpen(false);
       setName('');
+      setMeetUrl('');
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.');
@@ -218,6 +239,13 @@ export function NewGroup() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
+          />
+          <Input
+            label="Google Meet link"
+            placeholder="https://meet.google.com/abc-defg-hij"
+            value={meetUrl}
+            onChange={(e) => setMeetUrl(e.target.value)}
+            hint="Optional. Every session starts with it; you can add it with the first session instead."
           />
         </div>
       </Drawer>

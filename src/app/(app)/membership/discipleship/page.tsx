@@ -8,6 +8,7 @@ import { EmptyState, ForbiddenState } from '@/components/shell/States';
 import { cn } from '@/lib/cn';
 import { STAGE_LABEL, type Group, type Stage } from '@/modules/membership/types';
 import { NewGroup, Register } from './Register';
+import { Sessions, type NoticeData, type SessionsData } from './Sessions';
 
 export const metadata: Metadata = { title: 'Discipleship' };
 
@@ -26,6 +27,10 @@ type Card = {
 type Board = { sessions: number; columns: { stage: Stage; count: number; cards: Card[] }[] };
 export type RegisterData = {
   sessions: number;
+  /** How many attended sessions finish the class. */
+  needed: number;
+  /** When each numbered session was, for those that have a date. */
+  dates: Record<string, string>;
   rows: {
     enrollmentId: string;
     personId: string;
@@ -49,10 +54,9 @@ export default async function DiscipleshipPage({
     return <ForbiddenState what="the foundation class" />;
 
   const params = await searchParams;
-  const view = params.view === 'register' ? 'register' : 'board';
+  const view = params.view === 'register' || params.view === 'sessions' ? params.view : 'board';
   const groups = await serverApi<Group[]>('/membership/discipleship/groups');
-  const group =
-    params.group ?? (view === 'register' ? groups.find((g) => g.isActive)?.id : undefined);
+  const group = params.group ?? (view !== 'board' ? groups.find((g) => g.isActive)?.id : undefined);
 
   const board =
     view === 'board'
@@ -61,6 +65,14 @@ export default async function DiscipleshipPage({
   const register =
     view === 'register' && group
       ? await serverApi<RegisterData>(`/membership/discipleship/register?group=${group}`)
+      : null;
+  const sessions =
+    view === 'sessions' && group
+      ? await serverApi<SessionsData>(`/membership/discipleship/groups/${group}/sessions`)
+      : null;
+  const notice =
+    view === 'sessions' && can(me, 'membership.discipleship.manage')
+      ? await serverApi<NoticeData>('/membership/discipleship/session-notice')
       : null;
 
   const link = (next: { view?: string; group?: string }) => {
@@ -84,6 +96,7 @@ export default async function DiscipleshipPage({
         {(
           [
             ['board', 'Board'],
+            ['sessions', 'Sessions'],
             ['register', 'Class register'],
           ] as const
         ).map(([key, label]) => (
@@ -183,6 +196,13 @@ export default async function DiscipleshipPage({
           ))}
         </div>
       )}
+
+      {view === 'sessions' &&
+        (sessions ? (
+          <Sessions data={sessions} notice={notice} />
+        ) : (
+          <EmptyState title="No groups yet">Start a group, then add its sessions here.</EmptyState>
+        ))}
 
       {view === 'register' &&
         (register ? (
