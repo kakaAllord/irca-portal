@@ -71,6 +71,7 @@ export function ApplicationActions({ application: a }: { application: Applicatio
           <RoundAction
             label="Reject application"
             tone="danger"
+            align="end"
             disabled={busy}
             onClick={() => setRejecting(true)}
           >
@@ -124,6 +125,7 @@ export function ApplicationActions({ application: a }: { application: Applicatio
 function RoundAction({
   label,
   tone,
+  align = 'center',
   busy = false,
   disabled = false,
   onClick,
@@ -131,6 +133,8 @@ function RoundAction({
 }: {
   label: string;
   tone: 'positive' | 'danger';
+  /** Where the name sits: centred, or ending at the button's right edge. */
+  align?: 'center' | 'end';
   busy?: boolean;
   disabled?: boolean;
   onClick: () => void;
@@ -173,9 +177,11 @@ function RoundAction({
       <span
         role="tooltip"
         className={cn(
-          'pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 whitespace-nowrap',
+          'pointer-events-none invisible absolute bottom-full z-30 mb-1.5 whitespace-nowrap',
+          align === 'end' ? 'right-0' : 'left-1/2 -translate-x-1/2',
           'rounded-[6px] bg-btn-bg px-2 py-1 text-[11px] font-medium text-btn-fg shadow-md',
-          'opacity-0 transition-opacity group-hover:opacity-100 group-has-[:focus-visible]:opacity-100',
+          'opacity-0 transition-opacity group-hover:visible group-hover:opacity-100',
+          'group-has-[:focus-visible]:visible group-has-[:focus-visible]:opacity-100',
         )}
       >
         {label}
