@@ -12,7 +12,7 @@ import { ApplicationActions, NewApplication } from './ApplicationActions';
 
 export const metadata: Metadata = { title: 'Applications' };
 
-type Status = 'UNDER_REVIEW' | 'APPROVED' | 'CONFIRMED';
+type Status = 'UNDER_REVIEW' | 'APPROVED';
 export type Application = {
   id: string;
   status: Status;
@@ -33,15 +33,14 @@ export type Application = {
 };
 
 const TABS: [Status, string][] = [
-  ['UNDER_REVIEW', 'Under review'],
-  ['APPROVED', 'Approved'],
-  ['CONFIRMED', 'Confirmed'],
+  ['UNDER_REVIEW', 'Waiting application approval'],
+  ['APPROVED', 'Waiting confirmation'],
 ];
 
 const STEPS = [
   ['Application submitted', 'From the form, or entered by an administrator.'],
-  ['Under review', 'A pastor or an administrator looks at it.'],
-  ['Approved', 'Approved by a pastor or an administrator.'],
+  ['Waiting application approval', 'A pastor or an administrator approves it, or not.'],
+  ['Waiting confirmation', 'Approved, and waiting for the pastors to confirm.'],
   ['Confirmed', 'When the pastors are ready, they become members, with a number.'],
 ] as const;
 
@@ -61,7 +60,7 @@ export default async function ApplicationsPage({
     counts: Partial<Record<Status, number>>;
     rows: Application[];
   }>(`/membership/applications?status=${status}`);
-  const reached = { UNDER_REVIEW: 2, APPROVED: 3, CONFIRMED: 4 }[status];
+  const reached = { UNDER_REVIEW: 2, APPROVED: 3 }[status];
 
   return (
     <>
@@ -121,11 +120,7 @@ export default async function ApplicationsPage({
                     <Faith yes={a.person.saved} label="Saved" />
                     <Faith yes={a.person.baptised} label="Baptised" />
                   </span>
-                  <Badge tone={a.status === 'CONFIRMED' ? 'positive' : 'neutral'}>
-                    {a.status === 'CONFIRMED' && a.person.memberNumber
-                      ? `Member ${a.person.memberNumber}`
-                      : STAGE_LABEL[a.person.stage]}
-                  </Badge>
+                  <Badge tone="neutral">{STAGE_LABEL[a.person.stage]}</Badge>
                   <ApplicationActions application={a} />
                 </li>
               ))}

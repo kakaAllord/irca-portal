@@ -18,9 +18,9 @@ export default function PastorsGuidePage() {
           does not have to wait for you; the activity log keeps who decided each one.
         </p>
         <p>
-          Approved applications wait in the <strong>Approved</strong> tab until you choose{' '}
-          <strong>Confirm</strong>, whenever you are ready. Confirming gives them their member
-          number.
+          Approved applications wait in the <strong>Waiting confirmation</strong> tab until you
+          choose <strong>Confirm</strong>, whenever you are ready. Confirming gives them their
+          member number.
         </p>
       </Step>
 

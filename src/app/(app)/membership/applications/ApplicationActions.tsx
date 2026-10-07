@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { clientApi } from '@/lib/api/client';
@@ -18,8 +17,9 @@ import type { PersonRow } from '@/modules/membership/types';
 import type { Application } from './page';
 
 /**
- * What each step offers: a tick and a cross under review, Confirm once
- * approved (whenever the pastors are ready, D54), or the record. Rejecting
+ * What each step offers: a tick and a cross while waiting for approval, and
+ * Confirm once approved (whenever the pastors are ready, D54). Confirmed
+ * members are on the Members page. Rejecting
  * asks for a reason first, because it is written down and the person may ask
  * why.
  */
@@ -42,17 +42,6 @@ export function ApplicationActions({ application: a }: { application: Applicatio
     } finally {
       setBusy(false);
     }
-  }
-
-  if (a.status === 'CONFIRMED') {
-    return (
-      <Link
-        href={`/membership/people/${a.person.id}`}
-        className="inline-flex h-7 items-center rounded-[7px] border border-border px-2.5 text-[11.5px] font-medium text-fg hover:bg-hover"
-      >
-        Record
-      </Link>
-    );
   }
 
   return (
