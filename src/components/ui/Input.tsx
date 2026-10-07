@@ -12,6 +12,8 @@ export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   trailing?: ReactNode;
   /** React 19 passes refs as ordinary props. */
   ref?: Ref<HTMLInputElement>;
+  /** Keeps the label for screen readers only, where the field says what it is. */
+  hideLabel?: boolean;
 };
 
 /**
@@ -28,6 +30,7 @@ export function Input({
   className,
   id,
   ref,
+  hideLabel,
   ...rest
 }: InputProps) {
   const auto = useId();
@@ -36,8 +39,11 @@ export function Input({
   const errorId = error ? `${inputId}-error` : undefined;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={inputId} className="text-[12px] font-medium text-fg2">
+    <div className={cn('flex flex-col', !hideLabel && 'gap-1.5')}>
+      <label
+        htmlFor={inputId}
+        className={cn('text-[12px] font-medium text-fg2', hideLabel && 'sr-only')}
+      >
         {label}
         {required && <RequiredMark />}
       </label>

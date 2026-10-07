@@ -11,10 +11,9 @@ import { serverApi } from '@/lib/api/server';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
-import { Badge } from '@/components/ui/Badge';
-import { Table, Row, Cell } from '@/components/ui/Table';
+import { Pager } from '@/components/ui/Pager';
 import { RecordButtons } from '@/modules/finance/components/RecordButtons';
-import { entrySign, entryWhat } from '@/modules/finance/components/entry';
+import { EntryRow } from '@/modules/finance/components/EntryRow';
 import { TransactionFilters } from './TransactionFilters';
 import { ExportButton } from './ExportButton';
 
@@ -96,6 +95,22 @@ export default async function TransactionsPage({
         }
       />
 
+      <section
+        aria-label="What is shown"
+        className="mt-4 grid gap-px overflow-hidden rounded-[16px] border border-border bg-border sm:grid-cols-3"
+      >
+        <Total label="Came in" value={formatMoney(data.totals.incomeTotal, currency)} tone="in" />
+        <Total
+          label="Went out"
+          value={formatMoney(data.totals.expenseTotal, currency)}
+          tone="out"
+        />
+        <Total
+          label={`Net, ${data.total} ${data.total === 1 ? 'entry' : 'entries'}`}
+          value={formatMoney(data.totals.net, currency)}
+        />
+      </section>
+
       <div className="mt-4">
         {data.rows.length === 0 ? (
           <EmptyState title="Nothing matches these filters">
@@ -104,63 +119,86 @@ export default async function TransactionsPage({
             </Link>
           </EmptyState>
         ) : (
-          <Table head={['Number', 'Date', 'Source / item', 'Payer / payee', 'Account', 'Amount']}>
-            {data.rows.map((entry) => (
-              <Row key={entry.id}>
-                <Cell nowrap>
-                  <Link
-                    href={`/finance/transactions/${entry.code}`}
-                    className={`font-mono text-[12px] ${entry.status === 'VOIDED' ? 'text-fg3 line-through' : 'text-accent'}`}
-                  >
-                    {entry.code}
-                  </Link>
-                  {entry.status === 'VOIDED' && (
-                    <span className="ml-2">
-                      <Badge tone="muted">Voided</Badge>
+          <div className="flex flex-col gap-4">
+            {byDay(data.rows).map(([date, entries]) => {
+              const counted = entries.filter((e) => e.status === 'POSTED');
+              const inDay = sum(counted.filter((e) => e.kind === 'INCOME'));
+              const outDay = sum(counted.filter((e) => e.kind === 'EXPENSE'));
+              return (
+                <section key={date} aria-label={longDay(date)}>
+                  <h2 className="mb-1.5 flex items-baseline justify-between gap-2 px-1">
+                    <span className="text-[12.5px] font-semibold text-fg">{longDay(date)}</span>
+                    <span className="text-[11.5px] text-fg3 tabular-nums">
+                      {[
+                        inDay > 0 && `+${formatMoney(String(inDay), '')}`,
+                        outDay > 0 && `−${formatMoney(String(outDay), '')}`,
+                      ]
+                        .filter(Boolean)
+                        .join('  ·  ')}
                     </span>
-                  )}
-                </Cell>
-                <Cell nowrap>{day(entry.txnDate)}</Cell>
-                <Cell>{entryWhat(entry)}</Cell>
-                <Cell>{entry.counterparty ?? '—'}</Cell>
-                <Cell nowrap>
-                  {entry.toAccount
-                    ? `${entry.account.name} → ${entry.toAccount.name}`
-                    : entry.account.name}
-                </Cell>
-                <Cell nowrap>
-                  <span
-                    className={`tabular-nums ${entry.status === 'VOIDED' ? 'text-fg3 line-through' : entry.kind === 'INCOME' ? 'text-pos' : entry.kind === 'TRANSFER' ? 'text-fg2' : 'text-fg'}`}
-                  >
-                    {entrySign(entry)}
-                    {formatMoney(entry.amount, entry.currency === currency ? '' : entry.currency)}
-                  </span>
-                  {entry.currency !== currency && (
-                    <span className="block text-[11px] text-fg3 tabular-nums">
-                      {formatMoney(entry.baseAmount, currency)}
-                    </span>
-                  )}
-                </Cell>
-              </Row>
-            ))}
-          </Table>
+                  </h2>
+                  <ul className="divide-y divide-border2 overflow-hidden rounded-[16px] border border-border bg-surface">
+                    {entries.map((entry) => (
+                      <EntryRow key={entry.id} entry={entry} currency={currency} />
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
         )}
+        <Pager
+          path="/finance/transactions"
+          params={withoutPage(query)}
+          page={Math.max(1, Number(params.page) || 1)}
+          pageSize={PAGE_SIZE}
+          total={data.total}
+        />
       </div>
-
-      <p className="mt-3 text-[12.5px] text-fg2">
-        {data.total} entr{data.total === 1 ? 'y' : 'ies'} · Income{' '}
-        <span className="tabular-nums">{formatMoney(data.totals.incomeTotal, currency)}</span> ·
-        Expenses{' '}
-        <span className="tabular-nums">{formatMoney(data.totals.expenseTotal, currency)}</span> ·
-        Net <span className="tabular-nums">{formatMoney(data.totals.net, currency)}</span>
-      </p>
     </>
   );
 }
 
-const day = (iso: string) =>
+/** As the API pages them. */
+const PAGE_SIZE = 25;
+
+function Total({ label, value, tone }: { label: string; value: string; tone?: 'in' | 'out' }) {
+  return (
+    <div className="flex flex-col bg-surface px-5 py-4">
+      <span className="text-[11.5px] text-fg3">{label}</span>
+      <span
+        className={`text-[19px] font-semibold tabular-nums ${tone === 'in' ? 'text-pos' : 'text-fg'}`}
+      >
+        {tone === 'in' ? '+' : tone === 'out' ? '−' : ''}
+        {value}
+      </span>
+    </div>
+  );
+}
+
+/** Entries arrive newest first; each day keeps them in that order. */
+function byDay(rows: FinanceTransaction[]): [string, FinanceTransaction[]][] {
+  const days: [string, FinanceTransaction[]][] = [];
+  for (const row of rows) {
+    const last = days.at(-1);
+    if (last?.[0] === row.txnDate) last[1].push(row);
+    else days.push([row.txnDate, [row]]);
+  }
+  return days;
+}
+
+const sum = (rows: FinanceTransaction[]) => rows.reduce((n, r) => n + Number(r.baseAmount), 0);
+
+const withoutPage = (query: URLSearchParams) => {
+  const next = new URLSearchParams(query);
+  next.delete('page');
+  return next;
+};
+
+const longDay = (iso: string) =>
   new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
+    weekday: 'long',
     day: 'numeric',
-    month: 'short',
+    month: 'long',
     timeZone: 'UTC',
   });
