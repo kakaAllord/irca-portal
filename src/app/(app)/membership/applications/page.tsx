@@ -41,7 +41,6 @@ const STEPS = [
   ['Application submitted', 'From the form, or entered by an administrator.'],
   ['Waiting application approval', 'A pastor or an administrator approves it, or not.'],
   ['Waiting confirmation', 'Approved, and waiting for the pastors to confirm.'],
-  ['Confirmed', 'When the pastors are ready, they become members, with a number.'],
 ] as const;
 
 /** Asking to become a member, and what was decided. */
