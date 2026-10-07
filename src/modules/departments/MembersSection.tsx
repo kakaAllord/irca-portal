@@ -15,8 +15,9 @@ import { ACCOUNT_STATUS, since, type DepartmentDetail } from './types';
  * A department's members, with adding and removing for whoever may keep them:
  * its leaders (`departments.own.members`) or an administrator
  * (`admin.departments.manage`). The page says which, since the same list
- * serves both. A department with a portal is kept by an administrator only
- * (D31), so its leaders see the list and a word about who adds to it. The
+ * serves both. A department whose portal its members sign in to is kept by
+ * an administrator only (D31), so its leaders see the list and a word about
+ * who adds to it; Outreach's leaders keep their own (D57). The
  * pastors and administrators overseeing a department see it `readOnly`.
  */
 export function MembersSection({
@@ -30,7 +31,9 @@ export function MembersSection({
 }) {
   const [q, setQ] = useState('');
   const leadersPage = permission === 'departments.own.members';
-  const editable = !readOnly && !department.archived && !(leadersPage && department.portal);
+  // Being in it signs someone in: an administrator's to give (D31).
+  const signsIn = department.portal?.membersSignIn ?? false;
+  const editable = !readOnly && !department.archived && !(leadersPage && signsIn);
   // A long list gets a search; a short one reads faster without.
   const searchable = department.members.length > 20;
   const shown = q.trim()
@@ -45,11 +48,7 @@ export function MembersSection({
         </h2>
         {editable && (
           <Can permission={permission}>
-            <AddMemberDrawer
-              departmentId={department.id}
-              name={department.name}
-              portal={department.portal !== null}
-            />
+            <AddMemberDrawer departmentId={department.id} name={department.name} portal={signsIn} />
           </Can>
         )}
       </div>
@@ -61,7 +60,7 @@ export function MembersSection({
           onChange={(e) => setQ(e.target.value)}
         />
       )}
-      {leadersPage && !readOnly && department.portal && (
+      {leadersPage && !readOnly && signsIn && (
         <p className="text-[12px] text-fg3">
           An administrator adds and removes the members of {department.name}, because being in it
           opens its portal.
@@ -69,7 +68,7 @@ export function MembersSection({
       )}
       {department.members.length === 0 ? (
         <EmptyState title="Nobody in it yet">
-          {department.portal
+          {signsIn
             ? "An administrator adds its members from the church's People list."
             : "Its leaders add members from the church's People list."}
         </EmptyState>
@@ -87,7 +86,7 @@ export function MembersSection({
                       STAGE_LABEL[m.stage],
                       m.phone ?? (m.phoneTail && `phone ${m.phoneTail}`),
                       admin &&
-                        department.portal &&
+                        signsIn &&
                         (m.account ? ACCOUNT_STATUS[m.account.status] : 'no account'),
                     ]
                       .filter(Boolean)

@@ -17,10 +17,11 @@ const ALL = [
 /**
  * Evangelism: the team, the GO days, the people reached and the follow-up.
  *
- * The team is the Outreach department itself (D28): its leaders and members,
- * added by an administrator (D31), so there is nothing here to add people to
- * a team. Its leaders run this portal by leading the department (D29) and
- * need no role; its members go out and record by being members (D33).
+ * The team is the Outreach department itself (D28). Its leaders run this
+ * portal by leading the department (D29), recording who was reached as well,
+ * and need no role. Its members go out with the teams but do not sign in
+ * (D57, replacing D33's split), so its leaders keep them, as any department's
+ * do.
  *
  * Someone reached on a doorstep becomes a person in the church's one list
  * (D23). What this portal shows about them — name, phone, area and timeline —
@@ -59,23 +60,8 @@ export const outreachModule = defineModule({
   },
   leaders: {
     description:
-      'Leaders of the Outreach department run it: the partner groups, the GO days, the training and the reports.',
+      'Leaders of the Outreach department run it: the partner groups, the GO days, who was reached and their follow-up, the training and the reports. Its members go out with the teams and do not sign in (D57).',
     permissions: ALL,
-  },
-  // D33: Outreach keeps its split. Its members go out, record who was
-  // reached and follow them up; its leaders also run it.
-  members: {
-    description:
-      'Members of the Outreach department go out on GO days, record who was reached and follow them up.',
-    permissions: [
-      'outreach.dashboard.read',
-      'outreach.team.read',
-      'outreach.sessions.read',
-      'outreach.reached.read',
-      'outreach.reached.record',
-      'outreach.training.read',
-      'outreach.reports.read',
-    ],
   },
   systemRoles: [],
   nav: [
