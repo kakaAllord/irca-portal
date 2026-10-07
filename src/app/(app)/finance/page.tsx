@@ -35,9 +35,11 @@ type Overview = {
 };
 
 /**
- * Money in, money out and what is left, for one month at a time: the net in
- * large figures, what each account holds as cards, where the money came from
- * and went, twelve months side by side, and the latest entries.
+ * What each account holds today, as cards, then one month at a time: the net
+ * in large figures, where the money came from and went, twelve months side by
+ * side, and the latest entries. The month switcher sits with the month's
+ * figures, so changing it never seems to change the balances above it, which
+ * are always today's.
  */
 export default async function FinanceOverview({
   searchParams,
@@ -69,13 +71,42 @@ export default async function FinanceOverview({
       <PageHeader
         title="Finance"
         subtitle={`Income and expenses for ${me.church?.name ?? 'this church'}.`}
-        actions={
-          <>
-            <MonthSwitcher month={data.month} />
-            <RecordButtons timezone={me.church?.timezone ?? 'UTC'} />
-          </>
-        }
+        actions={<RecordButtons timezone={me.church?.timezone ?? 'UTC'} />}
       />
+
+      {held.length > 0 && (
+        <section aria-labelledby="held-heading">
+          <Heading id="held-heading" link={{ href: '/finance/accounts', label: 'All accounts' }}>
+            What each account holds today
+          </Heading>
+          <ul className="flex snap-x gap-4 overflow-x-auto pb-2">
+            {held.map(({ account, method }) => (
+              <li key={account.id} className="w-[260px] flex-none snap-start">
+                <Link href="/finance/accounts" aria-label={`${account.name}, ${method.name}`}>
+                  <BankCard
+                    account={account}
+                    kind={method.kind}
+                    methodName={method.name}
+                    church={me.church?.code ?? 'Church'}
+                    showCurrency={accounts!.foreign}
+                    compact
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div
+        className={cn(
+          'mb-3 flex flex-wrap items-center justify-between gap-2',
+          held.length > 0 && 'mt-8',
+        )}
+      >
+        <h2 className="text-[14px] font-semibold text-fg">Money in and out</h2>
+        <MonthSwitcher month={data.month} />
+      </div>
 
       <section
         aria-label={`${shown} in figures`}
@@ -122,31 +153,7 @@ export default async function FinanceOverview({
         </div>
       )}
 
-      {held.length > 0 && (
-        <section className="mt-7" aria-labelledby="held-heading">
-          <Heading id="held-heading" link={{ href: '/finance/accounts', label: 'All accounts' }}>
-            What each account holds today
-          </Heading>
-          <ul className="flex snap-x gap-4 overflow-x-auto pb-2">
-            {held.map(({ account, method }) => (
-              <li key={account.id} className="w-[260px] flex-none snap-start">
-                <Link href="/finance/accounts" aria-label={`${account.name}, ${method.name}`}>
-                  <BankCard
-                    account={account}
-                    kind={method.kind}
-                    methodName={method.name}
-                    church={me.church?.code ?? 'Church'}
-                    showCurrency={accounts!.foreign}
-                    compact
-                  />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <div className="mt-7 grid gap-4 lg:grid-cols-2 lg:items-start">
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Panel title="Where it came from" sub={`Income by source, ${shown}`}>
           <Bars rows={data.bySource} currency={currency} tone="in" />
         </Panel>

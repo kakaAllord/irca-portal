@@ -4,25 +4,30 @@ import { cn } from '@/lib/cn';
 /**
  * A share of a total as a bar, green for money in and clay for money out.
  * CSS, not a charting library: a name, a figure and a rectangle each do not
- * need 40kB of JavaScript.
+ * need 40kB of JavaScript. Past `limit` rows the rest are summed on one line,
+ * so two lists side by side stay close in length.
  */
 export function Bars({
   rows,
   currency,
   tone,
   empty = 'Nothing recorded this month.',
+  limit = 6,
 }: {
   rows: { id: string; name: string; total: string; share: number }[];
   currency: string;
   tone: 'in' | 'out';
   empty?: string;
+  limit?: number;
 }) {
   if (rows.length === 0) {
     return <p className="py-6 text-center text-[12.5px] text-fg3">{empty}</p>;
   }
+  const shown = rows.length > limit ? rows.slice(0, limit - 1) : rows;
+  const rest = rows.slice(shown.length);
   return (
     <ul className="flex flex-col gap-3">
-      {rows.map((row) => (
+      {shown.map((row) => (
         <li key={row.id} className="flex flex-col gap-1">
           <span className="flex items-baseline justify-between gap-3 text-[12.5px]">
             <span className="truncate text-fg">{row.name}</span>
@@ -39,6 +44,17 @@ export function Bars({
           </span>
         </li>
       ))}
+      {rest.length > 0 && (
+        <li className="flex items-baseline justify-between gap-3 border-t border-border2 pt-2.5 text-[12px] text-fg3">
+          <span>
+            {rest.length} more {rest.length === 1 ? 'line' : 'lines'}
+          </span>
+          <span className="tabular-nums">
+            {formatMoney(String(rest.reduce((sum, r) => sum + Number(r.total), 0)), currency)}
+            <span className="ml-1.5 text-[11px]">{rest.reduce((sum, r) => sum + r.share, 0)}%</span>
+          </span>
+        </li>
+      )}
     </ul>
   );
 }
