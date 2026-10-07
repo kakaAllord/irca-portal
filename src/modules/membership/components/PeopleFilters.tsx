@@ -1,10 +1,10 @@
 'use client';
 
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLiveSearch } from '@/lib/useLiveSearch';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { FilterFunnel } from '@/components/ui/FilterFunnel';
 import { cn } from '@/lib/cn';
 
 type Field = 'salvation' | 'baptism' | 'gender' | 'age' | 'lives' | 'source';
@@ -120,61 +120,17 @@ export function PeopleFilters({
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <Popover className="relative">
-          <PopoverButton
-            aria-label={on ? `Filters, ${on} on` : 'Filters'}
-            title="Filters"
-            className={cn(
-              'relative flex h-9 items-center gap-1.5 rounded-[7px] border px-2.5 text-[12.5px] font-medium',
-              'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-              on
-                ? 'border-accent-br bg-chip text-fg'
-                : 'border-border text-fg2 hover:bg-hover hover:text-fg',
-            )}
-          >
-            <svg
-              viewBox="0 0 20 20"
-              className="size-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M3 4h14l-5.5 6.5V16l-3 1.5v-7L3 4z" />
-            </svg>
-            {on > 0 && (
-              <span className="flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-accent-ink tabular-nums">
-                {on}
-              </span>
-            )}
-          </PopoverButton>
-          <PopoverPanel
-            anchor={{ to: 'bottom end', gap: 6 }}
-            className="z-30 w-64 rounded-[10px] border border-border bg-surface p-3 shadow-xl"
-          >
-            <div className="flex flex-col gap-3">
-              {fields.map((f) => (
-                <Select
-                  key={f}
-                  label={FIELDS[f].label}
-                  value={value(f)}
-                  onChange={(e) => set({ [f]: e.target.value })}
-                  options={FIELDS[f].options}
-                />
-              ))}
-              {on > 0 && (
-                <button
-                  type="button"
-                  onClick={() => set(Object.fromEntries(fields.map((f) => [f, ''])))}
-                  className="self-start text-[12px] text-accent underline"
-                >
-                  Clear the filters
-                </button>
-              )}
-            </div>
-          </PopoverPanel>
-        </Popover>
+        <FilterFunnel on={on} onClear={() => set(Object.fromEntries(fields.map((f) => [f, ''])))}>
+          {fields.map((f) => (
+            <Select
+              key={f}
+              label={FIELDS[f].label}
+              value={value(f)}
+              onChange={(e) => set({ [f]: e.target.value })}
+              options={FIELDS[f].options}
+            />
+          ))}
+        </FilterFunnel>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
