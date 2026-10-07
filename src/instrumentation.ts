@@ -1,5 +1,6 @@
 import type { Instrumentation } from 'next';
 import { visitorHeaders } from '@/shared';
+import { sessionCookieName } from '@/lib/auth/session-cookie';
 /* eslint-disable no-console -- the portal's own log is the last place an unreported error can go */
 
 /**
@@ -43,7 +44,7 @@ export const onRequestError: Instrumentation.onRequestError = async (err, reques
     if (e.name === 'AbortError' || /stream closed early|aborted/i.test(String(e.message))) return;
 
     const api = process.env.API_INTERNAL_URL;
-    const name = process.env.SESSION_COOKIE_NAME ?? 'irca_session';
+    const name = sessionCookieName();
     const cookie = header(request.headers.cookie);
     const session = cookie
       .split(';')

@@ -3,6 +3,7 @@ import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { visitorHeaders } from '@/shared';
 import { readApiError } from './errors';
+import { sessionCookieName } from '@/lib/auth/session-cookie';
 
 const API = () => {
   const url = process.env.API_INTERNAL_URL;
@@ -37,7 +38,7 @@ export async function serverApi<T>(path: string, init: Options = {}): Promise<T 
   const { onUnauthorized = 'redirect', ...rest } = init;
   const jar = await cookies();
   const h = await headers();
-  const name = process.env.SESSION_COOKIE_NAME ?? 'irca_session';
+  const name = sessionCookieName();
   const token = jar.get(name)?.value;
 
   const res = await fetch(`${API()}/v1${path}`, {

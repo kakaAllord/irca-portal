@@ -7,6 +7,7 @@ import {
   contentSecurityPolicy,
   visitorHeaders,
 } from '@/shared';
+import { sessionCookieName } from '@/lib/auth/session-cookie';
 
 /** Pages anyone may open. Everything else needs to be signed in. */
 const PUBLIC = ['/login', '/forgot-password', '/reset-password', '/accept-invite'];
@@ -29,7 +30,7 @@ const PUBLIC = ['/login', '/forgot-password', '/reset-password', '/accept-invite
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   if (pathname.startsWith('/api/')) return toApi(request);
-  const cookieName = process.env.SESSION_COOKIE_NAME ?? 'irca_session';
+  const cookieName = sessionCookieName();
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   if (!isPublic && !request.cookies.has(cookieName)) {
