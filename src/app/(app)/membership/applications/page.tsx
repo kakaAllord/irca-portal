@@ -20,8 +20,6 @@ export type Application = {
   submittedAt: string;
   decidedAt: string | null;
   rejectReason: string | null;
-  availableOn: string | null;
-  canConfirm: boolean;
   person: {
     id: string;
     fullName: string;
@@ -46,7 +44,7 @@ const STEPS = [
   ['Application submitted', 'From the form, or entered by an administrator.'],
   ['Under review', 'A pastor or an administrator looks at it.'],
   ['Approved', 'Approved by a pastor or an administrator.'],
-  ['Confirmed', 'After the probation month they become members, with a number.'],
+  ['Confirmed', 'When the pastors are ready, they become members, with a number.'],
 ] as const;
 
 /** Asking to become a member, and what was decided. */
@@ -63,7 +61,6 @@ export default async function ApplicationsPage({
   const status = (TABS.find(([key]) => key === raw)?.[0] ?? 'UNDER_REVIEW') as Status;
   const data = await serverApi<{
     counts: Partial<Record<Status, number>>;
-    probationDays: number;
     rows: Application[];
   }>(`/membership/applications?status=${status}`);
   const reached = { UNDER_REVIEW: 2, APPROVED: 3, CONFIRMED: 4, REJECTED: 2, WITHDRAWN: 1 }[status];
@@ -120,6 +117,7 @@ export default async function ApplicationsPage({
                       {a.source === 'FORM' && ' on the form'} · attends since{' '}
                       {day(a.person.attendsSince)} · foundation class {a.person.foundationClass} ·{' '}
                       {a.person.baptised ? 'baptised' : 'not baptised'}
+                      {a.status === 'APPROVED' && a.decidedAt && ` · approved ${day(a.decidedAt)}`}
                       {a.rejectReason && ` · ${a.rejectReason}`}
                     </span>
                   </span>
@@ -157,11 +155,7 @@ export default async function ApplicationsPage({
                 />
                 <span className="flex flex-col">
                   <span className="text-[12.5px] font-medium text-fg">{title}</span>
-                  <span className="text-[11.5px] text-fg3">
-                    {i === 3
-                      ? `After ${data.probationDays} days they become members, with a number.`
-                      : note}
-                  </span>
+                  <span className="text-[11.5px] text-fg3">{note}</span>
                 </span>
               </li>
             ))}
