@@ -75,6 +75,7 @@ export function PeopleFilters({
   path,
   fields = ['salvation', 'baptism', 'gender', 'age', 'lives', 'source'],
   tabs,
+  defaultTab = 'all',
   counts = {},
   shown,
   total,
@@ -84,6 +85,8 @@ export function PeopleFilters({
   fields?: Field[];
   /** Quick groups shown as chips under the search, with their counts. */
   tabs?: readonly (readonly [string, string])[];
+  /** The tab shown when the address names none. */
+  defaultTab?: string;
   counts?: Record<string, number>;
   shown: number;
   total: number;
@@ -103,7 +106,7 @@ export function PeopleFilters({
   };
 
   const value = (key: string) => params.get(key) ?? 'any';
-  const tab = params.get('tab') ?? 'all';
+  const tab = params.get('tab') ?? defaultTab;
   const on = fields.filter((f) => params.get(f)).length;
 
   return (
@@ -179,7 +182,7 @@ export function PeopleFilters({
           <button
             key={key}
             type="button"
-            onClick={() => set({ tab: key === 'all' ? '' : key })}
+            onClick={() => set({ tab: key === defaultTab ? '' : key })}
             aria-pressed={tab === key}
             className={cn(
               'rounded-full border px-3 py-1 text-[12px]',

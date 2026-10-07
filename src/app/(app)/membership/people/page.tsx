@@ -42,7 +42,8 @@ export default async function RegistrationsPage({
     return <ForbiddenState what="the people of this church" />;
 
   const params = await searchParams;
-  const query = new URLSearchParams();
+  // Opens on those who want to join the church; All is one tap away.
+  const query = new URLSearchParams({ tab: params.tab ?? 'joining' });
   for (const key of KEYS) if (params[key]) query.set(key, params[key]);
   const page = Math.max(1, Number(params.page) || 1);
   const data = await serverApi<Listed>(
@@ -51,7 +52,7 @@ export default async function RegistrationsPage({
 
   // On these two tabs, everyone who has not finished can be texted at once,
   // each with their own link and in the language they chose on the form.
-  const tab = params.tab ?? 'all';
+  const tab = params.tab ?? 'joining';
   const remindAll =
     can(me, 'comms.messages.send') && (tab === 'incomplete' || tab === 'joining')
       ? tab === 'joining'
@@ -69,6 +70,7 @@ export default async function RegistrationsPage({
       <PeopleFilters
         path="/membership/people"
         tabs={TABS}
+        defaultTab="joining"
         counts={data.tabCounts}
         shown={data.rows.length}
         total={data.total}
