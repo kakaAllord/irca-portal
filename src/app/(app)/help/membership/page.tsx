@@ -45,8 +45,9 @@ export default function MembershipGuidePage() {
       <Step n={4} title="Applications">
         <p>
           <strong>Membership → Applications</strong>: enter an application with{' '}
-          <strong>+ New application</strong>. The pastors and the administrators approve or reject
-          it. Confirming waits for the probation month, and gives the new member their number.
+          <strong>+ New application</strong>. The pastors and the administrators approve it with the
+          round tick, or reject it with the round cross. Once approved, <strong>Confirm</strong>{' '}
+          whenever the pastors are ready; it gives the new member their number.
         </p>
       </Step>
 

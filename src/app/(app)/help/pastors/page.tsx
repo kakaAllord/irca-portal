@@ -13,13 +13,14 @@ export default function PastorsGuidePage() {
       <Step n={1} title="Decide membership applications">
         <p>
           <strong>Membership → Applications</strong> lists the people asking to become members. Open
-          one, read what they told the church, and choose <strong>Approve</strong>, or say no with a
-          reason. The administrators can decide them too, so an application does not have to wait
-          for you; the activity log keeps who decided each one.
+          one, read what they told the church, and approve it with the round tick, or reject it with
+          the round cross and a reason. The administrators can decide them too, so an application
+          does not have to wait for you; the activity log keeps who decided each one.
         </p>
         <p>
-          After the probation month, confirming the member gives them their member number. The
-          button says the date it becomes possible.
+          Approved applications wait in the <strong>Approved</strong> tab until you choose{' '}
+          <strong>Confirm</strong>, whenever you are ready. Confirming gives them their member
+          number.
         </p>
       </Step>
 

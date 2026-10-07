@@ -61,7 +61,7 @@ export default function AdministratorsGuidePage() {
       <Step n={5} title="Membership, and seeing as someone">
         <p>
           You can do everything in Membership the pastors can, deciding applications included:
-          approve, reject, and confirm after the probation month. Prayer requests are the
+          approve, reject, and confirm whenever the pastors are ready. Prayer requests are the
           pastors&apos; alone.
         </p>
         <p>
