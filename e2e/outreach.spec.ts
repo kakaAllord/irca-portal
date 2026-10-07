@@ -230,8 +230,8 @@ test('a GO day, from planning to the dashboard', async ({ browser, request }) =>
   await expect(page.getByRole('button', { name: `${team[2]!.name}: missed` })).toBeVisible();
 
   // The dashboard moved by exactly what happened.
-  expect(await figure(page, 'People reached')).toBe(reachedBefore + 4);
   expect(await listed(page, 'followups')).toBe(followUpsBefore + 2);
+  expect(await figure(page, 'People reached')).toBe(reachedBefore + 4);
   await page.getByRole('link', { name: /^People reached/ }).click();
   await expect(page.getByRole('link', { name: new RegExp(`Neema Known ${stamp}`) })).toBeVisible();
 });

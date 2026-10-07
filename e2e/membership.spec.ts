@@ -72,7 +72,8 @@ test.describe('from the registration form to the Membership portal', () => {
     // has run since the form wrote: the API catches up with it on the
     // pastor's own requests (D51), so the first page already has them.
     await signIn(page, PASTOR);
-    await page.getByRole('link', { name: 'Members' }).click();
+    // Registrations opens on those wanting to join; this visitor is on All.
+    await page.goto('/membership/people?tab=all');
     await page.getByPlaceholder('Search name or phone…').fill(name);
     const row = page.getByRole('button', { name: `Open ${name}` });
     await expect(row).toBeVisible({ timeout: 15_000 });
@@ -85,7 +86,7 @@ test.describe('from the registration form to the Membership portal', () => {
     page,
   }) => {
     await signIn(page, ADMIN);
-    await page.goto('/membership/people');
+    await page.goto('/membership/people?tab=all');
     await page.getByPlaceholder('Search name or phone…').fill(name);
     const row = page.getByRole('button', { name: `Open ${name}` });
     await expect(row).toBeVisible({ timeout: 15_000 });
