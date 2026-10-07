@@ -56,6 +56,7 @@ export function TransferDrawer({ onClose, timezone }: { onClose: () => void; tim
           toAccountId: values.toAccountId,
           amount: values.amount,
           toAmount: values.toAmount || undefined,
+          rate: values.rate || undefined,
           reference: values.reference || undefined,
           notes: values.notes || undefined,
           clientRequestId: requestId.current,

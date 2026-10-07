@@ -11,6 +11,11 @@ export type TransferValues = {
   amount: string;
   /** Only when the two accounts are in different currencies. */
   toAmount: string;
+  /**
+   * Only when money leaves another currency for anything but the church's
+   * own; into the church's own, what arrived says the rate.
+   */
+  rate?: string;
   reference: string;
   notes: string;
 };
@@ -37,6 +42,16 @@ export function TransferFields({
   const to = accounts?.options.find((o) => o.id === values.toAccountId);
   const twoCurrencies = Boolean(from && to && from.currency !== to.currency);
   const same = values.accountId && values.accountId === values.toAccountId;
+  const base = accounts?.baseCurrency ?? '';
+  const fromForeign = Boolean(from && base && from.currency !== base);
+  const latest = from ? accounts?.rates[from.currency] : undefined;
+  const left = Number(values.amount.replace(/,/g, ''));
+  const arrived = Number(values.toAmount.replace(/,/g, ''));
+  // Changed into the church's own currency: what arrived for each unit is the rate.
+  const implied =
+    fromForeign && to?.currency === base && left > 0 && arrived > 0
+      ? (arrived / left).toFixed(2)
+      : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,6 +95,28 @@ export function TransferFields({
           value={values.toAmount}
           error={errors.toAmount?.[0]}
           onChange={(e) => set('toAmount', e.target.value.replace(/[^\d.,]/g, ''))}
+        />
+      )}
+      {implied && from && (
+        <p className="text-[12.5px] text-fg2" aria-live="polite">
+          That is 1 {from.currency} = {formatMoney(implied, base)}, the rate kept with this entry.
+          {!latest && ` It becomes Finance's rate for ${from.currency} too.`}
+        </p>
+      )}
+      {fromForeign && from && to && to.currency !== base && (
+        <Input
+          label={`Rate: ${base} for 1 ${from.currency}`}
+          required={!latest}
+          inputMode="decimal"
+          hint={
+            latest
+              ? `Optional. Finance's latest rate, ${formatMoney(latest.rate, '')}, is used when left empty.`
+              : `No rate for ${from.currency} yet. Type what 1 ${from.currency} is worth; it becomes Finance's rate from now on.`
+          }
+          placeholder={latest ? formatMoney(latest.rate, '') : ''}
+          value={values.rate ?? ''}
+          error={errors.rate?.[0]}
+          onChange={(e) => set('rate', e.target.value.replace(/[^\d.,]/g, ''))}
         />
       )}
       {from && to && !twoCurrencies && Number(values.amount.replace(/,/g, '')) > 0 && (

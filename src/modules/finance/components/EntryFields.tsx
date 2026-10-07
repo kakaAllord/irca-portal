@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { formatMoney } from '@/shared';
 import { Input } from '@/components/ui/Input';
 import { CatalogCombobox, type CatalogValue } from './CatalogCombobox';
@@ -97,41 +96,29 @@ export function EntryFields({
 
       {foreign && account && (
         <div className="flex flex-col gap-1.5 rounded-[10px] border border-border2 bg-surface2 p-3">
-          {latest || values.rate ? (
-            <>
-              <Input
-                label={`Rate: ${base} for 1 ${account.currency}`}
-                required
-                inputMode="decimal"
-                hint={
-                  latest
-                    ? `Finance's latest rate is ${formatMoney(latest.rate, '')}. Change it only if this money was changed at another.`
-                    : undefined
-                }
-                placeholder={latest ? formatMoney(latest.rate, '') : ''}
-                value={values.rate}
-                error={errors.rate?.[0]}
-                onChange={(e) => set('rate', e.target.value.replace(/[^\d.,]/g, ''))}
-              />
-              <p className="text-[12.5px] text-fg2" aria-live="polite">
-                {equivalent ? (
-                  <>
-                    That is <span className="font-semibold text-fg">{equivalent}</span>.
-                  </>
-                ) : (
-                  `The ${base} amount shows once the amount is typed.`
-                )}
-              </p>
-            </>
-          ) : (
-            <p className="text-[12.5px] text-warn-fg">
-              Set a rate for {account.currency} first, in{' '}
-              <Link href="/finance/accounts#rates" className="underline">
-                Accounts
-              </Link>
-              .
-            </p>
-          )}
+          <Input
+            label={`Rate: ${base} for 1 ${account.currency}`}
+            required
+            inputMode="decimal"
+            hint={
+              latest
+                ? `Finance's latest rate is ${formatMoney(latest.rate, '')}. Change it only if this money was changed at another.`
+                : `No rate for ${account.currency} yet. Type what 1 ${account.currency} was worth when this money came; it becomes Finance's rate from now on.`
+            }
+            placeholder={latest ? formatMoney(latest.rate, '') : ''}
+            value={values.rate}
+            error={errors.rate?.[0]}
+            onChange={(e) => set('rate', e.target.value.replace(/[^\d.,]/g, ''))}
+          />
+          <p className="text-[12.5px] text-fg2" aria-live="polite">
+            {equivalent ? (
+              <>
+                That is <span className="font-semibold text-fg">{equivalent}</span>.
+              </>
+            ) : (
+              `The ${base} amount shows once the amount${latest ? '' : ' and the rate'} are typed.`
+            )}
+          </p>
         </div>
       )}
 
