@@ -14,16 +14,6 @@ export type DatabaseUse = {
   }[];
 };
 
-export type ApiClient = {
-  id: string;
-  name: string;
-  kind: string;
-  keyPrefix: string;
-  createdAt: string;
-  lastUsedAt: string | null;
-  revokedAt: string | null;
-};
-
 export type ChurchSettings = {
   code: string;
   name: string;
@@ -241,4 +231,28 @@ export type AccessAccounts = {
     places: string[];
     canViewAs: boolean;
   }[];
+};
+
+/** Dev → Settings: email, texts and the log level (D52). Never a password or a key. */
+export type MessagingSettings = {
+  email: {
+    saved: boolean;
+    host: string | null;
+    port: number | null;
+    user: string | null;
+    from: string | null;
+    canSave: boolean;
+    sending: 'smtp' | 'log' | 'memory';
+  };
+  beem: {
+    saved: boolean;
+    senderId: string | null;
+    keyHint: string | null;
+    updatedAt: string | null;
+    canSave: boolean;
+    live: boolean;
+    /** The password in the reply link; the page builds the link around it. */
+    replyKey: string;
+  };
+  log: { level: 'error' | 'warn' | 'info' | 'debug'; saved: string | null };
 };

@@ -140,7 +140,7 @@ test.describe('the dev console', () => {
     await expect(page.getByText(/[a-z]{3,}@irca\.local/)).toHaveCount(0);
   });
 
-  test('the church settings and the registration keys', async ({ page }) => {
+  test('the church settings, email, texts and the log level', async ({ page }) => {
     await signIn(page, DEV);
     await page.getByRole('link', { name: 'Settings', exact: true }).click();
 
@@ -161,17 +161,33 @@ test.describe('the dev console', () => {
       page.getByRole('main').getByText('International Revival Church Arusha'),
     ).toBeVisible();
 
-    // Named for this run: the test database keeps the keys earlier runs made.
-    const name = `Made by a browser test ${Date.now()}`;
-    await page.getByRole('button', { name: '+ New key' }).click();
-    await page.getByRole('dialog').getByLabel('Name').fill(name);
-    await page.getByRole('button', { name: 'Make the key' }).click();
-    await expect(page.getByText('Copy this key now. It is not shown again.')).toBeVisible();
-    await page.getByRole('button', { name: 'I have copied it' }).click();
-    const row = page.getByRole('row', { name: new RegExp(name) });
-    await row.getByRole('button', { name: 'Revoke' }).click();
-    await page.getByRole('button', { name: 'Revoke it' }).click();
-    await expect(row.getByText('Revoked')).toBeVisible();
+    // Email: an account saved, its password never shown again, and removed
+    // so the next journey still finds emails going to the log (D52).
+    const email = page.locator('section', { has: page.getByRole('heading', { name: 'Email' }) });
+    await email.getByLabel('Server').fill('127.0.0.1');
+    await email.getByLabel('Port').fill('1');
+    await email.getByLabel('Username').fill('office@example.org');
+    await email.getByLabel(/^Password/).fill('abcd efgh ijkl mnop');
+    await email.getByLabel('From').fill('IRCA <office@example.org>');
+    await email.getByRole('button', { name: 'Save' }).click();
+    await expect(email.getByText('Saved. Send yourself a test to be sure.')).toBeVisible();
+    await expect(page.getByText('abcd efgh ijkl mnop')).toHaveCount(0);
+    await email.getByRole('button', { name: 'Remove the account' }).click();
+    await expect(email.getByText(/No account yet/)).toBeVisible();
+
+    // Texts: the link to give Beem, with its password in it.
+    const texts = page.locator('section', {
+      has: page.getByRole('heading', { name: 'Texts (Beem)' }),
+    });
+    await expect(texts.getByText(/\/v1\/public\/comms\/inbound\?key=\S{24,}/)).toBeVisible();
+
+    // The log level, changed and put back.
+    const log = page.locator('section', { has: page.getByRole('heading', { name: 'Log level' }) });
+    await log.getByLabel('Level').selectOption('debug');
+    await log.getByRole('button', { name: 'Change' }).click();
+    await expect(log.getByText('Changed. The next lines are written at this level.')).toBeVisible();
+    await log.getByLabel('Level').selectOption('error');
+    await log.getByRole('button', { name: 'Change' }).click();
   });
 
   test('alerts: who hears, the storage size, and a test sent on purpose', async ({ page }) => {
