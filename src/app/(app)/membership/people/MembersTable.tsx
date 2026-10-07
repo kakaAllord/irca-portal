@@ -9,6 +9,7 @@ import { Table, Row, Cell } from '@/components/ui/Table';
 import { SpiritualPills } from '@/modules/membership/components/SpiritualPills';
 import { EnrollDrawer } from '@/modules/membership/components/EnrollDrawer';
 import { Button } from '@/components/ui/Button';
+import { Facts } from '@/modules/membership/components/Facts';
 import {
   RowRemind,
   TextDrawer,
@@ -247,33 +248,30 @@ function Expanded({ id }: { id: string }) {
     );
   }
 
-  const fact = (label: string, value: string) => (
-    <div className="flex flex-col">
-      <span className="text-[10.5px] font-semibold tracking-wide text-fg3 uppercase">{label}</span>
-      <span className="text-[12.5px] text-fg">{value || '—'}</span>
-    </div>
-  );
-
   return (
     <div className="grid gap-5 py-2 md:grid-cols-3">
       <section className="flex flex-col gap-2.5">
         <h3 className="text-[12px] font-semibold text-fg">Registration</h3>
-        <div className="grid grid-cols-2 gap-2.5">
-          {person.sensitive && fact('Email', person.sensitive.email)}
-          {fact('Gender', person.gender)}
-          {fact('Lives in', person.livesIn)}
-          {fact(
-            'Occupation',
-            [person.occupation.kind, person.occupation.detail].filter(Boolean).join(' · '),
-          )}
-          {fact('First visit', person.visit.join(', '))}
-          {fact('Heard via', person.heardVia.join(', '))}
-        </div>
         {!person.complete && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-[11.5px] text-fg3">
             <Badge tone="accent">Did not finish the form</Badge>
+            {person.progress && `${person.progress.answered} of ${person.progress.of} answered`}
           </div>
         )}
+        <Facts
+          layout="stacked"
+          facts={[
+            ...(person.sensitive ? ([['Email', person.sensitive.email]] as const) : []),
+            ['Gender', person.gender],
+            ['Lives in', person.livesIn],
+            [
+              'Occupation',
+              [person.occupation.kind, person.occupation.detail].filter(Boolean).join(' · '),
+            ],
+            ['First visit', person.visit.join(', ')],
+            ['Heard via', person.heardVia.join(', ')],
+          ]}
+        />
       </section>
 
       {/* Absent, not hidden, for anyone who may not read it. */}
