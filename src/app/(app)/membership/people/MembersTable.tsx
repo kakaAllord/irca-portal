@@ -11,7 +11,7 @@ import { EnrollDrawer } from '@/modules/membership/components/EnrollDrawer';
 import { STAGE_LABEL, day, type PersonDetail, type PersonRow } from '@/modules/membership/types';
 
 /**
- * The Members table. A row opens in place, as in the design, and what it
+ * The Registrations table. A row opens in place, as in the design, and what it
  * shows is fetched then: the record comes from the API with the private parts
  * already left out for anyone who may not read them, so this page never holds
  * a prayer request it should not.
@@ -19,7 +19,7 @@ import { STAGE_LABEL, day, type PersonDetail, type PersonRow } from '@/modules/m
 export function MembersTable({ rows }: { rows: PersonRow[] }) {
   const [open, setOpen] = useState<string | null>(null);
   return (
-    <Table head={['Member', 'Phone', 'Registered', 'Age', 'Interested in', 'Heard via', '']}>
+    <Table head={['Name', 'Phone', 'Registered', 'Age', 'Interested in', 'Heard via', '']}>
       {rows.map((person) => (
         <MemberRows
           key={person.id}
