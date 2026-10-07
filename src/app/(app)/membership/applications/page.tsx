@@ -12,14 +12,13 @@ import { ApplicationActions, NewApplication } from './ApplicationActions';
 
 export const metadata: Metadata = { title: 'Applications' };
 
-type Status = 'UNDER_REVIEW' | 'APPROVED' | 'CONFIRMED' | 'REJECTED';
+type Status = 'UNDER_REVIEW' | 'APPROVED' | 'CONFIRMED';
 export type Application = {
   id: string;
   status: Status;
   source: 'FORM' | 'OFFICE';
   submittedAt: string;
   decidedAt: string | null;
-  rejectReason: string | null;
   person: {
     id: string;
     fullName: string;
@@ -37,7 +36,6 @@ const TABS: [Status, string][] = [
   ['UNDER_REVIEW', 'Under review'],
   ['APPROVED', 'Approved'],
   ['CONFIRMED', 'Confirmed'],
-  ['REJECTED', 'Not approved'],
 ];
 
 const STEPS = [
@@ -63,7 +61,7 @@ export default async function ApplicationsPage({
     counts: Partial<Record<Status, number>>;
     rows: Application[];
   }>(`/membership/applications?status=${status}`);
-  const reached = { UNDER_REVIEW: 2, APPROVED: 3, CONFIRMED: 4, REJECTED: 2 }[status];
+  const reached = { UNDER_REVIEW: 2, APPROVED: 3, CONFIRMED: 4 }[status];
 
   return (
     <>
@@ -117,22 +115,13 @@ export default async function ApplicationsPage({
                       {a.source === 'FORM' && ' on the form'} · attends since{' '}
                       {day(a.person.attendsSince)} · foundation class {a.person.foundationClass}
                       {a.status === 'APPROVED' && a.decidedAt && ` · approved ${day(a.decidedAt)}`}
-                      {a.rejectReason && ` · ${a.rejectReason}`}
                     </span>
                   </span>
                   <span className="flex gap-1.5">
                     <Faith yes={a.person.saved} label="Saved" />
                     <Faith yes={a.person.baptised} label="Baptised" />
                   </span>
-                  <Badge
-                    tone={
-                      a.status === 'CONFIRMED'
-                        ? 'positive'
-                        : a.status === 'REJECTED'
-                          ? 'danger'
-                          : 'neutral'
-                    }
-                  >
+                  <Badge tone={a.status === 'CONFIRMED' ? 'positive' : 'neutral'}>
                     {a.status === 'CONFIRMED' && a.person.memberNumber
                       ? `Member ${a.person.memberNumber}`
                       : STAGE_LABEL[a.person.stage]}
