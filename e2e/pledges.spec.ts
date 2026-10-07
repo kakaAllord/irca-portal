@@ -6,7 +6,7 @@ import pg from 'pg';
 
 config({ path: `${BACKEND_DIR}/.env.test`, quiet: true });
 
-const CLERK = { email: 'clerk@irca.local', password: 'clerk-password-123' };
+const CLERK = { email: 'mhazini2@irca.local', password: 'manager-password-123' };
 const MANAGER = { email: 'mhazini@irca.local', password: 'manager-password-123' };
 const PASTOR = { email: 'pastor@irca.local', password: 'pastor-password-123' };
 

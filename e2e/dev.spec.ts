@@ -36,7 +36,7 @@ test.describe('the dev console', () => {
     // Someone's page fails in their browser; the page sends it with the
     // reference it shows them (docs/plan/11, steps 11.3 to 11.5).
     const clerk = await browser.newPage();
-    await signIn(clerk, { email: 'clerk@irca.local', password: 'clerk-password-123' });
+    await signIn(clerk, { email: 'mhazini2@irca.local', password: 'manager-password-123' });
     const reference = `B${Date.now().toString().slice(-10)}`;
     const sent = await clerk.request.post('/api/errors', {
       headers: { 'x-irca-client': 'portal' },
@@ -58,7 +58,7 @@ test.describe('the dev console', () => {
       .fill(`Something went wrong. Send this to your developer: ${reference} Copy`);
     await page.getByRole('button', { name: 'Look up' }).click();
     await expect(page.getByRole('heading', { name: 'What they saw' })).toBeVisible();
-    await expect(page.getByText('Neema Mollel <clerk@irca.local>')).toBeVisible();
+    await expect(page.getByText('Neema Mollel <mhazini2@irca.local>')).toBeVisible();
     await expect(page.getByText(/reading 'amount'/).first()).toBeVisible();
     await expect(page.getByRole('link', { name: new RegExp(reference) })).toBeVisible();
 
@@ -75,7 +75,7 @@ test.describe('the dev console', () => {
     const admin = await browser.newPage();
     await signIn(admin, ADMIN);
     await admin.getByRole('link', { name: 'Users', exact: true }).click();
-    await admin.getByRole('link', { name: 'Neema Mollel clerk@irca.local' }).click();
+    await admin.getByRole('link', { name: 'Neema Mollel mhazini2@irca.local' }).click();
     await admin.getByRole('button', { name: 'View as Neema' }).click();
     await expect(admin.getByText('Viewing as Neema Mollel', { exact: true })).toBeVisible();
     await admin.getByRole('status').getByRole('button', { name: 'Back to my view' }).click();
@@ -89,7 +89,7 @@ test.describe('the dev console', () => {
     const session = page.getByRole('button', { name: /IRCA Admin viewed as Neema Mollel/ });
     await session.first().click();
     const drawer = page.getByRole('dialog');
-    await expect(drawer.getByText('Neema Mollel <clerk@irca.local>')).toBeVisible();
+    await expect(drawer.getByText('Neema Mollel <mhazini2@irca.local>')).toBeVisible();
     await expect(drawer.getByText(/pages? seen, in order/)).toBeVisible();
     await page.keyboard.press('Escape');
 

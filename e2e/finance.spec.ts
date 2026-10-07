@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const CLERK = { email: 'clerk@irca.local', password: 'clerk-password-123' };
+const CLERK = { email: 'mhazini2@irca.local', password: 'manager-password-123' };
 const MANAGER = { email: 'mhazini@irca.local', password: 'manager-password-123' };
 const ADMIN = { email: 'admin@irca.local', password: 'admin-password-123' };
 
