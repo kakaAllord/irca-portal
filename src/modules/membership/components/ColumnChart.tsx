@@ -137,7 +137,7 @@ export function ColumnChart({
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'pointer-events-none invisible absolute bottom-full z-30 mb-1 w-max max-w-56',
+                    'pointer-events-none invisible absolute top-0 z-30 w-max max-w-56',
                     // Kept inside the chart at either end.
                     i === 0
                       ? 'left-0'
