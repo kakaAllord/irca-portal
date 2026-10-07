@@ -49,6 +49,16 @@ export default async function RegistrationsPage({
     `/membership/people?${query}&page=${page}&pageSize=${PAGE_SIZE}`,
   );
 
+  // On these two tabs, everyone who has not finished can be texted at once,
+  // each with their own link and in the language they chose on the form.
+  const tab = params.tab ?? 'all';
+  const remindAll =
+    can(me, 'comms.messages.send') && (tab === 'incomplete' || tab === 'joining')
+      ? tab === 'joining'
+        ? 'membership.unfinished_joining'
+        : 'membership.unfinished'
+      : null;
+
   return (
     <>
       <PageHeader
@@ -63,6 +73,22 @@ export default async function RegistrationsPage({
         shown={data.rows.length}
         total={data.total}
       />
+      {remindAll && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-border bg-surface px-4 py-2.5 text-[12.5px] text-fg2">
+          <span>
+            {tab === 'joining'
+              ? 'Remind everyone here who wants to join but has not finished the form.'
+              : 'Remind everyone who has not finished the form.'}{' '}
+            Each is greeted in the language they used and sent their own link.
+          </span>
+          <Link
+            href={`/comms/compose?audience=${remindAll}`}
+            className="inline-flex h-8 items-center rounded-[7px] bg-btn-bg px-3 text-[12.5px] font-medium text-btn-fg hover:opacity-90"
+          >
+            Text them all
+          </Link>
+        </div>
+      )}
       <div className="mt-4">
         {data.rows.length === 0 ? (
           <EmptyState title="Nobody matches these filters.">

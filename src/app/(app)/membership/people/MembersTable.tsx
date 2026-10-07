@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Table, Row, Cell } from '@/components/ui/Table';
 import { SpiritualPills } from '@/modules/membership/components/SpiritualPills';
 import { EnrollDrawer } from '@/modules/membership/components/EnrollDrawer';
+import { RemindMenu } from '@/modules/comms/RemindMenu';
 import { STAGE_LABEL, day, type PersonDetail, type PersonRow } from '@/modules/membership/types';
 
 /**
@@ -85,6 +86,14 @@ function MemberRows({
           <span className="text-fg2">{person.heardVia.join(', ') || '—'}</span>
         </Cell>
         <Cell nowrap>
+          {/* An unfinished form can be sent its link from here, in their own
+              language (only for those who may remind, D34). The menu's clicks
+              stay off the row, which would otherwise open. */}
+          {!person.complete && person.hasRegistration && (
+            <span className="mr-1 inline-flex" onClick={(e) => e.stopPropagation()}>
+              <RemindMenu personId={person.id} label="Remind" />
+            </span>
+          )}
           <button
             type="button"
             onClick={(e) => {
