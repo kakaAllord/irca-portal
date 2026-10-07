@@ -36,6 +36,7 @@ export type NavIcon =
   | 'requests'
   | 'reports'
   | 'people'
+  | 'members'
   | 'roles'
   | 'portals'
   | 'activity'

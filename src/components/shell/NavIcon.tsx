@@ -91,6 +91,14 @@ const PATHS: Record<Name, React.ReactNode> = {
       <path d="M16 5.2a3.2 3.2 0 0 1 0 6.1M17.5 14.4c2.1.7 3.5 2.4 3.5 4.6" />
     </>
   ),
+  // One person with a tick: someone the pastors have confirmed.
+  members: (
+    <>
+      <circle cx="10" cy="8" r="3.2" />
+      <path d="M4 20c0-3.2 2.7-5.2 6-5.2 1.6 0 3 .4 4 1.2" />
+      <path d="M15.5 18.2l2 2 4-4.4" />
+    </>
+  ),
   // A key: what someone is allowed to open.
   roles: (
     <>

@@ -123,7 +123,7 @@ export default async function AdminOverviewPage() {
           <Tile
             label="Confirmed members"
             value={n(o.people.confirmedMembers)}
-            href={link('/membership/people', 'membership.people.read')}
+            href={link('/membership/members', 'membership.people.read')}
           />
           <Tile
             label="New in the foundation class"

@@ -113,9 +113,17 @@ export const membershipModule = defineModule({
       permission: 'membership.dashboard.read',
     },
     {
-      label: 'Members',
+      // Everyone who ever registered, and everyone added by hand.
+      label: 'Registrations',
       href: '/membership/people',
       icon: 'people',
+      permission: 'membership.people.read',
+    },
+    {
+      // Only those the pastors have confirmed, with their member numbers.
+      label: 'Members',
+      href: '/membership/members',
+      icon: 'members',
       permission: 'membership.people.read',
     },
     {

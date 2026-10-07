@@ -45,6 +45,8 @@ export type PersonRow = {
   complete: boolean;
   progress: { answered: number; of: number } | null;
   hasRegistration: boolean;
+  memberNumber: number | null;
+  confirmedAt: string | null;
 };
 
 export type PersonDetail = PersonRow & {
