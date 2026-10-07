@@ -60,7 +60,7 @@ export default async function ReportsPage({
       />
       <PeriodSwitch kind={kind} date={date} from={from} to={to} today={today} />
       <div className="mt-4">
-        <ReportView report={report} />
+        <ReportView report={report} church={me.church?.name ?? 'The church'} />
       </div>
     </>
   );

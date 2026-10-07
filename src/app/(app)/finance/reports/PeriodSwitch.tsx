@@ -35,8 +35,11 @@ export function PeriodSwitch({
     router.replace(`/finance/reports?${new URLSearchParams(params)}`, { scroll: false });
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <nav aria-label="Report" className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap items-end gap-3 rounded-[16px] border border-border bg-surface p-4">
+      <nav
+        aria-label="Report"
+        className="flex flex-wrap rounded-full border border-border bg-surface2 p-0.5"
+      >
         {TABS.map((tab) => (
           <Link
             key={tab.kind}
@@ -46,10 +49,10 @@ export function PeriodSwitch({
             aria-current={tab.kind === kind ? 'page' : undefined}
             scroll={false}
             className={cn(
-              'h-9 rounded-[7px] border px-3 text-[12.5px] leading-9 font-medium',
+              'rounded-full px-3.5 py-1.5 text-[12.5px]',
               tab.kind === kind
-                ? 'border-accent-br bg-chip text-accent'
-                : 'border-border text-fg2 hover:bg-hover',
+                ? 'bg-surface font-medium text-fg shadow-sm'
+                : 'text-fg2 hover:text-fg',
             )}
           >
             {tab.label}
