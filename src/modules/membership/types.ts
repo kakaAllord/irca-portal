@@ -84,7 +84,7 @@ export type PersonDetail = PersonRow & {
   notes?: { id: string; kind: 'NOTE' | 'VISIT' | 'CALL'; body: string; at: string; by: string }[];
 };
 
-export type Group = { id: string; name: string; isActive: boolean };
+export type Group = { id: string; name: string; isActive: boolean; meetUrl: string };
 
 /** "2 hours ago", "yesterday", "3 Sept". */
 export function when(iso: string): string {

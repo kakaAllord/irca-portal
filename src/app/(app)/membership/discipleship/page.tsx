@@ -7,6 +7,8 @@ import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
 import { cn } from '@/lib/cn';
 import { STAGE_LABEL, type Group, type Stage } from '@/modules/membership/types';
+import { GroupPicker } from './GroupPicker';
+import { NewSession } from './NewSession';
 import { NewGroup, Register } from './Register';
 import { Sessions, type NoticeData, type SessionsData } from './Sessions';
 
@@ -43,7 +45,24 @@ export type RegisterData = {
   }[];
 };
 
-/** From the decision to follow Christ to full membership. */
+const VIEWS = ['board', 'sessions', 'register'] as const;
+type View = (typeof VIEWS)[number];
+
+/** Where someone is in the class, in a few words, on a card or a row. */
+const about = (card: Card) =>
+  [
+    card.group,
+    card.progress && `${card.progress.attended} of ${card.progress.of} sessions`,
+    card.memberNumber && `Member ${card.memberNumber}`,
+  ]
+    .filter(Boolean)
+    .join(' · ') || (card.baptised ? 'Baptised' : 'Not in a class yet');
+
+/**
+ * From the decision to follow Christ to full membership. A group of new
+ * converts meets on its own day and Meet link; its sessions, and the
+ * attendance counted for it, are chosen with the group at the top.
+ */
 export default async function DiscipleshipPage({
   searchParams,
 }: {
@@ -54,9 +73,11 @@ export default async function DiscipleshipPage({
     return <ForbiddenState what="the foundation class" />;
 
   const params = await searchParams;
-  const view = params.view === 'register' || params.view === 'sessions' ? params.view : 'board';
+  const view: View = VIEWS.find((v) => v === params.view) ?? 'board';
+  const people = view === 'board';
   const groups = await serverApi<Group[]>('/membership/discipleship/groups');
-  const group = params.group ?? (view !== 'board' ? groups.find((g) => g.isActive)?.id : undefined);
+  const active = groups.filter((g) => g.isActive);
+  const group = params.group ?? (people ? undefined : active[0]?.id);
 
   const board =
     view === 'board'
@@ -70,76 +91,73 @@ export default async function DiscipleshipPage({
     view === 'sessions' && group
       ? await serverApi<SessionsData>(`/membership/discipleship/groups/${group}/sessions`)
       : null;
-  const notice =
-    view === 'sessions' && can(me, 'membership.discipleship.manage')
-      ? await serverApi<NoticeData>('/membership/discipleship/session-notice')
-      : null;
+  const notice = can(me, 'membership.discipleship.manage')
+    ? await serverApi<NoticeData>('/membership/discipleship/session-notice')
+    : null;
 
-  const link = (next: { view?: string; group?: string }) => {
+  /** The page's address for a view, group or stage, keeping the rest. */
+  const query = (next: { view?: View; group?: string }) => {
     const q = new URLSearchParams();
     const v = next.view ?? view;
     if (v !== 'board') q.set('view', v);
-    const g = next.group ?? group;
+    const g = 'group' in next ? next.group : group;
     if (g) q.set('group', g);
+    return q;
+  };
+  const link = (next: Parameters<typeof query>[0]) => {
+    const q = query(next);
     return `/membership/discipleship${q.size ? `?${q}` : ''}`;
   };
+
+  const pill = (on: boolean) =>
+    cn(
+      'rounded-full border px-3 py-1 text-[12px]',
+      on ? 'border-accent-br bg-chip text-fg' : 'border-border text-fg2 hover:bg-hover',
+    );
 
   return (
     <>
       <PageHeader
         title="Discipleship"
         subtitle="Every new convert from the decision to full membership."
-        actions={<NewGroup />}
+        actions={
+          <>
+            <NewGroup />
+            <NewSession groups={active} groupId={group} notice={notice} />
+          </>
+        }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-1.5">
-        {(
-          [
-            ['board', 'Board'],
-            ['sessions', 'Sessions'],
-            ['register', 'Class register'],
-          ] as const
-        ).map(([key, label]) => (
-          <Link
-            key={key}
-            href={link({ view: key })}
-            aria-current={view === key ? 'page' : undefined}
-            className={cn(
-              'rounded-full border px-3 py-1 text-[12px]',
-              view === key
-                ? 'border-accent-br bg-chip text-fg'
-                : 'border-border text-fg2 hover:bg-hover',
-            )}
-          >
-            {label}
-          </Link>
-        ))}
-        <span className="mx-2 h-4 w-px bg-border" aria-hidden="true" />
-        {view === 'board' && (
-          <Link
-            href="/membership/discipleship"
-            className={cn(
-              'rounded-full px-3 py-1 text-[12px]',
-              !group ? 'bg-chip text-fg' : 'text-fg2 hover:bg-hover',
-            )}
-          >
-            All groups
-          </Link>
-        )}
-        {groups
-          .filter((g) => g.isActive)
-          .map((g) => (
-            <Link
-              key={g.id}
-              href={link({ group: g.id })}
-              className={cn(
-                'rounded-full px-3 py-1 text-[12px]',
-                group === g.id ? 'bg-chip text-fg' : 'text-fg2 hover:bg-hover',
-              )}
-            >
-              {g.name}
-            </Link>
-          ))}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {(people || active.length > 0) && (
+            <GroupPicker
+              value={link({})}
+              options={[
+                ...(people ? [{ value: link({ group: '' }), label: 'All groups' }] : []),
+                ...active.map((g) => ({ value: link({ group: g.id }), label: g.name })),
+              ]}
+            />
+          )}
+          <nav aria-label="Views" className="flex flex-wrap items-center gap-1.5">
+            {(
+              [
+                ['board', 'People', people],
+                ['sessions', 'Sessions', view === 'sessions'],
+                ['register', 'Class register', view === 'register'],
+              ] as const
+            ).map(([key, label, on]) => (
+              <Link
+                key={key}
+                href={link({ view: key })}
+                aria-current={on ? 'page' : undefined}
+                className={pill(on)}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </div>
       </div>
 
       {board && (
@@ -173,15 +191,7 @@ export default async function DiscipleshipPage({
                       {card.fullName}
                     </span>
                   </span>
-                  <span className="text-[11px] text-fg3">
-                    {[
-                      card.group,
-                      card.progress && `${card.progress.attended} of ${card.progress.of} sessions`,
-                      card.memberNumber && `Member ${card.memberNumber}`,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ') || (card.baptised ? 'Baptised' : 'Not in a class yet')}
-                  </span>
+                  <span className="text-[11px] text-fg3">{about(card)}</span>
                   {card.atRisk && (
                     <span className="text-[11px] text-warn-fg">
                       Missed two in a row — worth a visit
@@ -199,9 +209,11 @@ export default async function DiscipleshipPage({
 
       {view === 'sessions' &&
         (sessions ? (
-          <Sessions data={sessions} notice={notice} />
+          <Sessions data={sessions} />
         ) : (
-          <EmptyState title="No groups yet">Start a group, then add its sessions here.</EmptyState>
+          <EmptyState title="No groups yet">
+            Start a group with + New group, then add its sessions with + New session.
+          </EmptyState>
         ))}
 
       {view === 'register' &&
