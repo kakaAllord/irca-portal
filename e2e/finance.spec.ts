@@ -158,7 +158,7 @@ test.describe('recording money', () => {
     // An account to move money into, from Finance → Accounts.
     await page.goto('/finance/accounts');
     await expect(async () => {
-      await page.getByRole('button', { name: '+ Account' }).click();
+      await page.getByRole('button', { name: '+ Add account' }).click();
       await expect(page.getByRole('dialog')).toContainText('Add an account', { timeout: 1_000 });
     }).toPass();
     await page.getByLabel('Payment method').selectOption({ label: 'Mobile money' });
@@ -202,7 +202,7 @@ test.describe('recording money', () => {
 
     await page.goto('/finance/budgets');
     await expect(
-      page.locator('li', { hasText: 'Outreach' }).getByText('Over', { exact: true }),
+      page.locator('li', { hasText: 'Outreach' }).getByText('Over budget', { exact: true }),
     ).toBeVisible();
   });
 
