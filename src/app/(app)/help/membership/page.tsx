@@ -12,9 +12,12 @@ export default function MembershipGuidePage() {
     >
       <Step n={1} title="Find a person">
         <p>
-          <strong>Membership → Members</strong> lists everyone, filtered as you type: saved,
-          baptised, age, where they live, how they heard. The tabs count each list. A row opens in
-          place with what they told the registration form; the name opens their whole record.
+          <strong>Membership → Registrations</strong> lists everyone who has ever registered,
+          searched as you type. The funnel beside the search holds the other filters: saved,
+          baptised, gender, age, where they live, how they heard. The tabs count each list. A row
+          opens in place with what they told the registration form; the name opens their whole
+          record. <strong>Membership → Members</strong> lists only the confirmed members, by member
+          number.
         </p>
         <p>
           Someone who came to the office rather than filling in the form:{' '}

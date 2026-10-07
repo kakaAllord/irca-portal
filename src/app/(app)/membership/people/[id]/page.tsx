@@ -49,7 +49,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   return (
     <div className="max-w-4xl">
       <Link href="/membership/people" className="text-[12px] text-fg3 hover:text-fg">
-        ← Members
+        ← Registrations
       </Link>
       <PageHeader
         title={person.fullName || 'Unknown'}
