@@ -70,10 +70,14 @@ export default function MembershipGuidePage() {
 
       <Step n={6} title="The foundation class on Google Meet">
         <p>
-          <strong>Membership → Discipleship → Sessions</strong>: choose the group, then{' '}
-          <strong>+ New session</strong> with the day, the time and the Meet link (the group&apos;s
-          link is filled in). The group is texted straight away with the template chosen under{' '}
-          <strong>The text for new sessions</strong>.
+          Each group of new converts meets on its own day and Meet link. In{' '}
+          <strong>Membership → Discipleship</strong>, start one with <strong>+ New group</strong>,
+          then <strong>+ New session</strong> beside it: choose the group attending, the day, the
+          time and the Meet link (the group&apos;s link is filled in), and the approved template to
+          text the group with. The group is texted straight away, and the template is remembered for
+          the next session. The <strong>Group</strong> dropdown at the top shows one group&apos;s
+          sessions and register; under <strong>People</strong>, everyone on the journey shows as a{' '}
+          <strong>Board</strong> or a <strong>Table</strong>.
         </p>
         <p>
           After the session, <strong>Copy attendance link</strong> and paste it into the Meet chat.
