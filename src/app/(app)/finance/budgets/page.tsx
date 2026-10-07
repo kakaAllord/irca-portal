@@ -27,8 +27,9 @@ const STATE: Record<State, { label: string; pill: string; bar: string }> = {
  *
  * Used is the expenses tagged with the department, worked out every time.
  * Going over is shown, never prevented: the money was spent, and the books
- * say so (D40). The page leads with what needs doing: a department over, one
- * spending with no budget, one using it faster than the month is passing.
+ * say so (D40). The page leads with what needs doing: the departments still
+ * waiting for a budget this month, those spending with none first, then one
+ * over, then the rest by how fast they are going.
  */
 export default async function BudgetsPage({
   searchParams,
@@ -56,11 +57,14 @@ export default async function BudgetsPage({
     return elapsed !== null && elapsed < 1 && share > elapsed + 0.25 ? 'ahead' : 'fine';
   };
   const lines = data.lines.map((line) => ({ line, state: stateOf(line) }));
-  const ORDER: State[] = ['over', 'unbudgeted', 'near', 'ahead', 'fine', 'idle'];
+  const ORDER: State[] = ['over', 'near', 'ahead', 'fine'];
   const budgeted = lines
-    .filter((l) => l.state !== 'idle')
+    .filter((l) => l.line.allocated !== null)
     .sort((a, b) => ORDER.indexOf(a.state) - ORDER.indexOf(b.state));
-  const idle = lines.filter((l) => l.state === 'idle');
+  // Spending with no budget comes first: that money is going unmeasured.
+  const waiting = lines
+    .filter((l) => l.line.allocated === null)
+    .sort((a, b) => Number(b.line.used) - Number(a.line.used));
 
   const allocated = Number(data.totals.allocated);
   const used = Number(data.totals.used);
@@ -136,7 +140,55 @@ export default async function BudgetsPage({
             </div>
           </section>
 
-          {(over.length > 0 || unbudgeted.length > 0) && (
+          {waiting.length > 0 && (
+            <section
+              aria-labelledby="waiting-heading"
+              className="mb-6 rounded-[18px] border border-warn-br bg-warn-bg/50 p-4"
+            >
+              <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <h2 id="waiting-heading" className="text-[13.5px] font-semibold text-fg">
+                  Waiting for a budget
+                  <span className="ml-1.5 font-normal text-fg3">· {waiting.length}</span>
+                </h2>
+                <p className="text-[12px] text-fg2">
+                  Set what each may spend in {shown}, so its spending is measured.
+                </p>
+              </div>
+              <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {waiting.map(({ line, state }) => (
+                  <li
+                    key={line.department.id}
+                    className="flex items-center justify-between gap-3 rounded-[12px] border border-border bg-surface px-3.5 py-2.5"
+                  >
+                    <span className="flex min-w-0 flex-col">
+                      <span className="truncate text-[13px] font-medium text-fg">
+                        {line.department.name}
+                      </span>
+                      {state === 'unbudgeted' ? (
+                        <Link
+                          href={expensesOf(line.department.id)}
+                          className="text-[11.5px] text-warn-fg tabular-nums hover:underline"
+                        >
+                          {money(line.used)} spent already
+                        </Link>
+                      ) : (
+                        <span className="text-[11.5px] text-fg3">Nothing spent yet</span>
+                      )}
+                    </span>
+                    <SetBudget
+                      line={line}
+                      month={data.month}
+                      monthName={shown}
+                      currency={currency}
+                      compact
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {over.length > 0 && (
             <section aria-label="To do" className="mb-6 flex flex-col gap-2">
               <h2 className="text-[13px] font-semibold text-fg">To do</h2>
               {over.map(({ line }) => (
@@ -152,64 +204,29 @@ export default async function BudgetsPage({
                   <SetBudget line={line} month={data.month} monthName={shown} currency={currency} />
                 </ToDo>
               ))}
-              {unbudgeted.map(({ line }) => (
-                <ToDo key={line.department.id} tone="warn">
-                  <span>
-                    <strong>{line.department.name}</strong> spent {money(line.used)} with no budget
-                    for {shown}. Give it one so its spending is measured.
-                  </span>
-                  <SetBudget line={line} month={data.month} monthName={shown} currency={currency} />
-                </ToDo>
-              ))}
             </section>
           )}
 
-          <section aria-label="Departments">
-            <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {budgeted.map(({ line, state }) => (
-                <DepartmentCard
-                  key={line.department.id}
-                  line={line}
-                  state={state}
-                  elapsed={elapsed}
-                  money={money}
-                  href={expensesOf(line.department.id)}
-                  action={
-                    <SetBudget
-                      line={line}
-                      month={data.month}
-                      monthName={shown}
-                      currency={currency}
-                    />
-                  }
-                />
-              ))}
-            </ul>
-          </section>
-
-          {idle.length > 0 && (
-            <section
-              aria-label="No budget yet"
-              className="mt-6 rounded-[14px] border border-dashed border-border p-4"
-            >
-              <p className="mb-3 text-[12.5px] text-fg2">
-                No budget for {shown}, and nothing spent yet.
-              </p>
-              <ul className="flex flex-wrap gap-2">
-                {idle.map(({ line }) => (
-                  <li
+          {budgeted.length > 0 && (
+            <section aria-label="Departments">
+              <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {budgeted.map(({ line, state }) => (
+                  <DepartmentCard
                     key={line.department.id}
-                    className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pr-1 pl-3 text-[12.5px] text-fg"
-                  >
-                    {line.department.name}
-                    <SetBudget
-                      line={line}
-                      month={data.month}
-                      monthName={shown}
-                      currency={currency}
-                      compact
-                    />
-                  </li>
+                    line={line}
+                    state={state}
+                    elapsed={elapsed}
+                    money={money}
+                    href={expensesOf(line.department.id)}
+                    action={
+                      <SetBudget
+                        line={line}
+                        month={data.month}
+                        monthName={shown}
+                        currency={currency}
+                      />
+                    }
+                  />
                 ))}
               </ul>
             </section>
