@@ -33,11 +33,11 @@ export default function MembershipGuidePage() {
         </p>
       </Step>
 
-      <Step n={3} title="Visits, calls and notes">
+      <Step n={3} title="Notes">
         <p>
-          On their record, <strong>Log call</strong>, <strong>Log visit</strong> or{' '}
-          <strong>Add note</strong> after each contact, so whoever calls next knows. Their timeline
-          also shows what Outreach and Communications did with them.
+          On their record, <strong>Add note</strong> to write down what the church should know, so
+          whoever meets them next knows. Their timeline also shows what Outreach and Communications
+          did with them.
         </p>
         <p>
           Someone who did not finish the form can be sent their own link, by copying it or by

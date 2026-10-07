@@ -56,13 +56,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         subtitle={`${STAGE_LABEL[person.stage]}${person.memberNumber ? ` · member no. ${person.memberNumber}` : ''} · registered ${day(person.registeredAt)}`}
         actions={
           <>
-            <NoteDrawer
-              personId={person.id}
-              name={person.fullName}
-              kind="NOTE"
-              label="Add note"
-              size="md"
-            />
+            <NoteDrawer personId={person.id} name={person.fullName} size="md" />
           </>
         }
       />
@@ -217,21 +211,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         {person.notes && (
           <section className="rounded-[10px] border border-border bg-surface p-4 md:col-span-2">
             <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-[13px] font-semibold text-fg">Visits, calls and notes</h2>
-              <div className="flex gap-2">
-                <NoteDrawer
-                  personId={person.id}
-                  name={person.fullName}
-                  kind="VISIT"
-                  label="Log visit"
-                />
-                <NoteDrawer
-                  personId={person.id}
-                  name={person.fullName}
-                  kind="CALL"
-                  label="Log call"
-                />
-              </div>
+              <h2 className="text-[13px] font-semibold text-fg">Notes</h2>
             </div>
             <ol className="flex flex-col gap-2 text-[12.5px]">
               {person.notes.length === 0 && <li className="text-fg3">Nothing written down yet.</li>}

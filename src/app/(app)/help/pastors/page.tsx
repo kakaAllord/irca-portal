@@ -60,9 +60,9 @@ export default function PastorsGuidePage() {
 
       <Step n={5} title="Everything else in Membership">
         <p>
-          You see all of Membership: members, their journey, visits and calls, the foundation class.
-          The administrators keep it up to date; the Membership guide explains each page if you need
-          it.
+          You see all of Membership: registrations, members, their journey, notes, the foundation
+          class. The administrators keep it up to date; the Membership guide explains each page if
+          you need it.
         </p>
       </Step>
     </Guide>

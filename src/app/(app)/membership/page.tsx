@@ -6,7 +6,6 @@ import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
 import { DonutChart } from '@/modules/membership/components/DonutChart';
-import { NoteDrawer } from '@/modules/membership/components/NoteDrawer';
 import { when } from '@/modules/membership/types';
 import { DashboardExport } from './DashboardExport';
 
@@ -189,7 +188,6 @@ export default async function MembershipDashboard() {
                       </span>
                     )}
                   </span>
-                  <NoteDrawer personId={c.personId} name={c.fullName} />
                 </li>
               ))}
             </ul>

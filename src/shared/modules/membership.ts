@@ -46,7 +46,7 @@ export const membershipModule = defineModule({
       label: 'Mark saved or baptised, move people between stages, and add people by hand',
     },
     'membership.people.export': { kind: 'read', label: 'Download the list of people as a PDF' },
-    'membership.notes.write': { kind: 'write', label: 'Add notes and log visits and calls' },
+    'membership.notes.write': { kind: 'write', label: 'Add notes' },
     'membership.applications.read': { kind: 'read', label: 'See membership applications' },
     'membership.applications.submit': {
       kind: 'write',
