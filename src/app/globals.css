@@ -43,12 +43,14 @@
   --warn-fg: #7a4b00;
   --warn-br: #f0d29b;
   /* Chart series, in this order and never cycled. Checked for colour-blind
-     separation against this surface; slots 3 and 4 are under 3:1 here, which
-     is why every chart has a legend with its numbers and a table view. */
+     separation against this surface, the fifth with the first beside it as a
+     donut puts them; slots 3, 4 and 5 are under 3:1 here, which is why every
+     chart has a legend with its numbers and a table view. */
   --series-1: #2a78d6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
   --series-4: #eda100;
+  --series-5: #e87ba4;
 }
 
 [data-theme='dark'] {
@@ -86,6 +88,7 @@
   --series-2: #d95926;
   --series-3: #199e70;
   --series-4: #c98500;
+  --series-5: #d55181;
 }
 
 @theme inline {
@@ -120,6 +123,7 @@
   --color-series-2: var(--series-2);
   --color-series-3: var(--series-3);
   --color-series-4: var(--series-4);
+  --color-series-5: var(--series-5);
   --font-sans: var(--font-geist-sans);
 }
 
