@@ -40,6 +40,13 @@ async function figure(page: Page, label: string) {
   return Number((await card.innerText()).split('\n')[1]!.replace(/\D/g, ''));
 }
 
+/** A figure the dashboard leaves out, read from its own list ("N in all"). */
+async function listed(page: Page, key: string) {
+  await page.goto(`/outreach/figures/${key}?from=${today}&to=${today}`);
+  const text = await page.getByText(/^[\d,]+ in all/).innerText();
+  return Number(text.split(' in all')[0]!.replace(/\D/g, ''));
+}
+
 /**
  * A GO day, end to end (08 step 8.10): the leader plans it with two teams;
  * at phone width four people are recorded, one of them someone the church
@@ -140,7 +147,7 @@ test('a GO day, from planning to the dashboard', async ({ browser, request }) =>
   }
 
   const reachedBefore = await figure(page, 'People reached');
-  const followUpsBefore = await figure(page, 'Follow-ups done');
+  const followUpsBefore = await listed(page, 'followups');
 
   // Plan today's GO day, with two teams.
   await page.goto('/outreach/sessions');
@@ -224,7 +231,7 @@ test('a GO day, from planning to the dashboard', async ({ browser, request }) =>
 
   // The dashboard moved by exactly what happened.
   expect(await figure(page, 'People reached')).toBe(reachedBefore + 4);
-  expect(await figure(page, 'Follow-ups done')).toBe(followUpsBefore + 2);
+  expect(await listed(page, 'followups')).toBe(followUpsBefore + 2);
   await page.getByRole('link', { name: /^People reached/ }).click();
   await expect(page.getByRole('link', { name: new RegExp(`Neema Known ${stamp}`) })).toBeVisible();
 });

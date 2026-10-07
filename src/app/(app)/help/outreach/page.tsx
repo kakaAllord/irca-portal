@@ -47,8 +47,8 @@ export default function OutreachGuidePage() {
         <p>
           After the day a leader marks it completed and, if there is one,{' '}
           <strong>Attach the report</strong> as a PDF. <strong>Outreach → Dashboard</strong> shows
-          people reached, saved, followed up, GO days held and more, for any period; every number
-          opens the list it counts.
+          four numbers for any period: people reached, salvations, those awaiting follow-up and
+          first-time attenders. Every number opens the list it counts.
         </p>
       </Step>
     </Guide>
