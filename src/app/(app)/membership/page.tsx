@@ -36,7 +36,6 @@ type Dashboard = {
       }[]
     | null;
   heard: { label: string; count: number; share: number }[];
-  heardOtherCount: number;
   incomplete: {
     total: number;
     rows: {
@@ -207,11 +206,6 @@ export default async function MembershipDashboard() {
             name="People"
             slices={data.heard.map((h) => ({ label: h.label, value: h.count, share: h.share }))}
           />
-          {data.heardOtherCount > 0 && can(me, 'membership.insights.read') && (
-            <Link href="/membership/insights" className="mt-3 block text-[12px] text-accent">
-              {data.heardOtherCount} people typed their own answer — read them →
-            </Link>
-          )}
         </section>
 
         <section className="rounded-[10px] border border-border bg-surface p-4">
