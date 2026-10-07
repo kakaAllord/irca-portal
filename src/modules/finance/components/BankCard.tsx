@@ -37,6 +37,7 @@ export function BankCard({
   church,
   showCurrency,
   actions,
+  compact = false,
 }: {
   account: FinanceAccountView;
   kind: PaymentMethod;
@@ -45,6 +46,8 @@ export function BankCard({
   showCurrency: boolean;
   /** The card's menu, drawn in its top corner. */
   actions?: ReactNode;
+  /** Smaller, for a row of cards: no number, and a smaller balance. */
+  compact?: boolean;
 }) {
   const face = FACE[kind] ?? FACE.OTHER;
   const negative = account.balance !== null && Number(account.balance) < 0;
@@ -53,7 +56,7 @@ export function BankCard({
   return (
     <div className="group relative">
       <div
-        className={`relative isolate flex aspect-[1.586] w-full flex-col justify-between overflow-hidden rounded-[18px] p-5 text-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.55)] ring-1 ring-black/10 transition-transform duration-300 group-hover:-translate-y-0.5 ${off ? 'opacity-60 grayscale' : ''}`}
+        className={`relative isolate flex aspect-[1.586] w-full flex-col justify-between overflow-hidden rounded-[18px] text-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.55)] ring-1 ring-black/10 transition-transform duration-300 group-hover:-translate-y-0.5 ${compact ? 'p-4' : 'p-5'} ${off ? 'opacity-60 grayscale' : ''}`}
         style={{
           backgroundImage: `radial-gradient(120% 90% at 100% 0%, ${face.glow}55 0%, transparent 55%), linear-gradient(135deg, ${face.from} 0%, ${face.via} 55%, ${face.to} 100%)`,
         }}
@@ -90,9 +93,11 @@ export function BankCard({
           )}
         </div>
 
-        <p className="font-mono text-[15px] tracking-[0.14em] opacity-90 sm:text-[17px]">
-          {account.number ? grouped(account.number) : '•••• •••• ••••'}
-        </p>
+        {!compact && (
+          <p className="font-mono text-[15px] tracking-[0.14em] opacity-90 sm:text-[17px]">
+            {account.number ? grouped(account.number) : '•••• •••• ••••'}
+          </p>
+        )}
 
         <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
@@ -106,7 +111,7 @@ export function BankCard({
               Balance{showCurrency ? ` · ${account.currency}` : ''}
             </p>
             <p
-              className={`text-[19px] leading-tight font-semibold tabular-nums sm:text-[21px] ${negative ? 'text-[#ffb4a8]' : ''}`}
+              className={`leading-tight font-semibold tabular-nums ${compact ? 'text-[16px]' : 'text-[19px] sm:text-[21px]'} ${negative ? 'text-[#ffb4a8]' : ''}`}
             >
               {account.balance === null
                 ? 'Not open yet'

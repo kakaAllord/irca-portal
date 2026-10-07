@@ -1,38 +1,42 @@
 import { formatMoney } from '@/shared';
+import { cn } from '@/lib/cn';
 
 /**
- * A share of a total as a bar. CSS, not a charting library: three numbers and
- * a rectangle each do not need 40kB of JavaScript.
+ * A share of a total as a bar, green for money in and clay for money out.
+ * CSS, not a charting library: a name, a figure and a rectangle each do not
+ * need 40kB of JavaScript.
  */
 export function Bars({
   rows,
   currency,
+  tone,
+  empty = 'Nothing recorded this month.',
 }: {
   rows: { id: string; name: string; total: string; share: number }[];
   currency: string;
+  tone: 'in' | 'out';
+  empty?: string;
 }) {
   if (rows.length === 0) {
-    return (
-      <p className="rounded-[10px] border border-dashed border-border p-4 text-[12.5px] text-fg3">
-        Nothing recorded this month.
-      </p>
-    );
+    return <p className="py-6 text-center text-[12.5px] text-fg3">{empty}</p>;
   }
   return (
-    <ul className="flex flex-col gap-2 rounded-[10px] border border-border bg-surface p-3.5">
+    <ul className="flex flex-col gap-3">
       {rows.map((row) => (
-        <li key={row.id} className="flex items-center gap-3 text-[12.5px]">
-          <span className="w-32 shrink-0 truncate text-fg2">{row.name}</span>
-          <span className="h-2 flex-1 overflow-hidden rounded-full bg-chip" aria-hidden="true">
+        <li key={row.id} className="flex flex-col gap-1">
+          <span className="flex items-baseline justify-between gap-3 text-[12.5px]">
+            <span className="truncate text-fg">{row.name}</span>
+            <span className="flex-none tabular-nums text-fg">
+              {formatMoney(row.total, currency)}
+              <span className="ml-1.5 text-[11px] text-fg3">{row.share}%</span>
+            </span>
+          </span>
+          <span className="h-1.5 overflow-hidden rounded-full bg-chip" aria-hidden="true">
             <span
-              className="block h-full rounded-full bg-neutral-bar"
+              className={cn('block h-full rounded-full', tone === 'in' ? 'bg-pos' : 'bg-[#b4532a]')}
               style={{ width: `${Math.max(row.share, 2)}%` }}
             />
           </span>
-          <span className="w-28 shrink-0 text-right tabular-nums text-fg">
-            {formatMoney(row.total, currency)}
-          </span>
-          <span className="w-9 shrink-0 text-right text-fg3">{row.share}%</span>
         </li>
       ))}
     </ul>
