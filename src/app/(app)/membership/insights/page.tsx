@@ -12,28 +12,14 @@ import { DonutChart } from '@/modules/membership/components/DonutChart';
 export const metadata: Metadata = { title: 'Insights' };
 
 type Tally = { label: string; count: number; share: number }[];
-type StepInsight = {
-  id: string;
-  label: string;
-  optional: boolean;
-  reached: number;
-  answered: number;
-  blank: number;
-  stopped: number;
-  answeredPct: number;
-  blankPct: number;
-  stoppedPct: number;
-};
 type Insights = {
   period: string;
   total: number;
-  report: { started: number; submitted: number; steps: StepInsight[] };
+  report: { started: number; submitted: number };
   heard: Tally;
   heardOther: { label: string; count: number }[];
   ages: Tally;
   livesIn: Tally;
-  cameFor: Tally;
-  interestedIn: Tally;
 };
 
 const PERIODS = [
@@ -89,17 +75,11 @@ export default async function InsightsPage({
     </section>
   );
 
-  const shown = data.report.steps.filter((s) => s.reached > 0);
-  const mostStop = shown.reduce<StepInsight | null>(
-    (worst, s) => (s.stopped > (worst?.stopped ?? 0) ? s : worst),
-    null,
-  );
-
   return (
     <>
       <PageHeader
         title="Insights"
-        subtitle={`${data.total.toLocaleString('en-GB')} registrations. What the church should keep doing, and where people stop.`}
+        subtitle={`${data.total.toLocaleString('en-GB')} registrations. Who is coming, and how they heard about IRCA.`}
         actions={
           <nav className="flex gap-1.5" aria-label="Period">
             {PERIODS.map(([key, label]) => (
@@ -161,71 +141,7 @@ export default async function InsightsPage({
         </section>
         {pie('Age groups', byAge(data.ages))}
         {card('Where they live', data.livesIn, 'note')}
-        {card('What they came for', data.cameFor)}
-        {card('What they would like from us', data.interestedIn)}
       </div>
-
-      <section className="mt-4 rounded-[10px] border border-border bg-surface p-4">
-        <h2 className="text-[13px] font-semibold text-fg">Where people stop on the form</h2>
-        <p className="mb-3 text-[12px] text-fg3">
-          How many people reached each screen, in the form&apos;s order.{' '}
-          {mostStop
-            ? `Most of those who did not finish stopped at ${mostStop.label} (${mostStop.stopped}).`
-            : 'Nobody has stopped part-way yet.'}{' '}
-          Each question is counted only against the people who were shown it: someone not joining
-          the church was never asked where they would serve, and does not count as skipping it.
-        </p>
-        <div className="mb-4">
-          <ColumnChart
-            name="Reached"
-            limit={shown.length}
-            table={false}
-            columns={shown.map((s) => ({
-              label: s.label,
-              value: s.reached,
-              note: s === mostStop ? 'most stop' : undefined,
-              detail: [
-                `Answered ${s.answered} (${s.answeredPct}%)`,
-                `Left blank ${s.blank} (${s.blankPct}%)`,
-                `Stopped here ${s.stopped} (${s.stoppedPct}%)`,
-              ],
-            }))}
-          />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-[12.5px]">
-            <thead>
-              <tr className="text-left text-[11px] text-fg3">
-                <th className="py-1.5 font-semibold">Question</th>
-                <th className="py-1.5 text-right font-semibold">Reached</th>
-                <th className="py-1.5 text-right font-semibold">Answered</th>
-                <th className="py-1.5 text-right font-semibold">Left blank</th>
-                <th className="py-1.5 text-right font-semibold">Stopped here</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((s) => (
-                <tr key={s.id} className="border-t border-border2">
-                  <td className="py-1.5">
-                    {s.label}
-                    {s.optional && <span className="ml-1 text-[11px] text-fg3">(optional)</span>}
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums">{s.reached}</td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    {s.answered} <span className="text-fg3">{s.answeredPct}%</span>
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    {s.blank} <span className="text-fg3">{s.blankPct}%</span>
-                  </td>
-                  <td className="py-1.5 text-right tabular-nums">
-                    {s.stopped} <span className="text-fg3">{s.stoppedPct}%</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
     </>
   );
 }
