@@ -12,7 +12,7 @@ import { ApplicationActions, NewApplication } from './ApplicationActions';
 
 export const metadata: Metadata = { title: 'Applications' };
 
-type Status = 'UNDER_REVIEW' | 'APPROVED' | 'CONFIRMED' | 'REJECTED' | 'WITHDRAWN';
+type Status = 'UNDER_REVIEW' | 'APPROVED' | 'CONFIRMED' | 'REJECTED';
 export type Application = {
   id: string;
   status: Status;
@@ -38,7 +38,6 @@ const TABS: [Status, string][] = [
   ['APPROVED', 'Approved'],
   ['CONFIRMED', 'Confirmed'],
   ['REJECTED', 'Not approved'],
-  ['WITHDRAWN', 'Withdrawn'],
 ];
 
 const STEPS = [
@@ -64,7 +63,7 @@ export default async function ApplicationsPage({
     counts: Partial<Record<Status, number>>;
     rows: Application[];
   }>(`/membership/applications?status=${status}`);
-  const reached = { UNDER_REVIEW: 2, APPROVED: 3, CONFIRMED: 4, REJECTED: 2, WITHDRAWN: 1 }[status];
+  const reached = { UNDER_REVIEW: 2, APPROVED: 3, CONFIRMED: 4, REJECTED: 2 }[status];
 
   return (
     <>
