@@ -86,7 +86,7 @@ export const adminModule = defineModule({
       icon: 'requests',
       permission: 'admin.requests.read',
     },
-    { label: 'People', href: '/admin/users', icon: 'people', permission: 'admin.users.read' },
+    { label: 'Users', href: '/admin/users', icon: 'people', permission: 'admin.users.read' },
     {
       label: 'Departments',
       href: '/admin/departments',

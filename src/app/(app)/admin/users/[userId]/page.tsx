@@ -38,14 +38,14 @@ const date = (iso: string | null) =>
 export default async function PersonPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
   const me = await serverApi<MeResponse>('/auth/me');
-  if (!can(me, 'admin.users.read')) return <ForbiddenState what="the people of this church" />;
+  if (!can(me, 'admin.users.read')) return <ForbiddenState what="the users of this church" />;
 
   const person = await serverApi<Person>(`/admin/users/${userId}`);
 
   return (
     <>
       <Link href="/admin/users" className="text-[12px] text-fg2 hover:text-fg">
-        ← People
+        ← Users
       </Link>
 
       <div className="mt-3">

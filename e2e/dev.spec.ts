@@ -25,7 +25,7 @@ test.describe('the dev console', () => {
     await expect(page.getByRole('heading', { name: 'Logs', level: 1 })).toBeVisible();
 
     // D43: viewing as someone covers what the developer needs to see.
-    for (const name of ['People', 'Departments', 'Activity', 'Requests']) {
+    for (const name of ['Users', 'Departments', 'Activity', 'Requests']) {
       await expect(page.getByRole('link', { name, exact: true })).toHaveCount(0);
     }
     await page.goto('/admin/users');
@@ -74,7 +74,7 @@ test.describe('the dev console', () => {
     // An administrator views as the finance clerk from her own page.
     const admin = await browser.newPage();
     await signIn(admin, ADMIN);
-    await admin.getByRole('link', { name: 'People', exact: true }).click();
+    await admin.getByRole('link', { name: 'Users', exact: true }).click();
     await admin.getByRole('link', { name: 'Neema Mollel clerk@irca.local' }).click();
     await admin.getByRole('button', { name: 'View as Neema' }).click();
     await expect(admin.getByText('Viewing as Neema Mollel', { exact: true })).toBeVisible();

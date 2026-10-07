@@ -77,7 +77,7 @@ export function InviteButton() {
   return (
     <>
       {sentTo && <Alert>Invitation sent to {sentTo}.</Alert>}
-      <Button onClick={() => setOpen(true)}>+ Invite person</Button>
+      <Button onClick={() => setOpen(true)}>+ Invite user</Button>
 
       <Drawer
         open={open}

@@ -35,10 +35,10 @@ test.describe('inviting someone', () => {
     await page.getByLabel('Email').fill(ADMIN.email);
     await page.getByLabel('Password').fill(ADMIN.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await page.getByRole('link', { name: 'People' }).click();
-    await expect(page.getByRole('heading', { name: 'People' })).toBeVisible();
+    await page.getByRole('link', { name: 'Users' }).click();
+    await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible();
 
-    await page.getByRole('button', { name: '+ Invite person' }).click();
+    await page.getByRole('button', { name: '+ Invite user' }).click();
     await page.getByLabel('Email').last().fill(NEW_PERSON.email);
     await page.getByLabel('Full name').fill(NEW_PERSON.name);
     await page.getByRole('checkbox', { name: /^Administrator/ }).check();
@@ -56,7 +56,7 @@ test.describe('inviting someone', () => {
     await theirPage.getByRole('button', { name: 'Set password and sign in' }).click();
 
     // They land in the portal as an administrator: Admin and Membership.
-    await expect(theirPage.getByRole('link', { name: 'People' })).toBeVisible();
+    await expect(theirPage.getByRole('link', { name: 'Users' })).toBeVisible();
     await expect(theirPage.getByRole('link', { name: 'Members' })).toBeVisible();
 
     // The administrator views as them: the same pages, with no buttons.
