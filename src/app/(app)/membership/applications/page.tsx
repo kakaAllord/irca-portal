@@ -27,6 +27,7 @@ export type Application = {
     stage: Stage;
     memberNumber: number | null;
     attendsSince: string;
+    saved: boolean;
     baptised: boolean;
     foundationClass: 'finished' | 'dropped' | 'attending' | 'not started';
   };
@@ -115,11 +116,14 @@ export default async function ApplicationsPage({
                     <span className="text-[11.5px] text-fg3">
                       Applied {day(a.submittedAt)}
                       {a.source === 'FORM' && ' on the form'} · attends since{' '}
-                      {day(a.person.attendsSince)} · foundation class {a.person.foundationClass} ·{' '}
-                      {a.person.baptised ? 'baptised' : 'not baptised'}
+                      {day(a.person.attendsSince)} · foundation class {a.person.foundationClass}
                       {a.status === 'APPROVED' && a.decidedAt && ` · approved ${day(a.decidedAt)}`}
                       {a.rejectReason && ` · ${a.rejectReason}`}
                     </span>
+                  </span>
+                  <span className="flex gap-1.5">
+                    <Faith yes={a.person.saved} label="Saved" />
+                    <Faith yes={a.person.baptised} label="Baptised" />
                   </span>
                   <Badge
                     tone={
@@ -163,5 +167,34 @@ export default async function ApplicationsPage({
         </aside>
       </div>
     </>
+  );
+}
+
+/**
+ * Saved or baptised, at a glance: a green tick when they are, a plain cross
+ * when not yet, always with the word, so it never rests on colour alone.
+ */
+function Faith({ yes, label }: { yes: boolean; label: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11.5px] font-medium',
+        yes ? 'border-pos-br bg-pos-bg text-pos' : 'border-border bg-surface2 text-fg3',
+      )}
+    >
+      <svg
+        viewBox="0 0 20 20"
+        className="size-3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        {yes ? <path d="M4 10.5l3.5 3.5L16 6" /> : <path d="M6 6l8 8M14 6l-8 8" />}
+      </svg>
+      {yes ? label : `Not ${label.toLowerCase()}`}
+    </span>
   );
 }
