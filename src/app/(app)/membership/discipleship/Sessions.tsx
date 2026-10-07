@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/lib/cn';
 
 export type SessionsData = {
   group: { id: string; name: string; meetUrl: string };
@@ -16,6 +17,12 @@ export type SessionsData = {
     attended: number;
     selfMarked: number;
     notice: string | null;
+    reminders: {
+      id: string;
+      sendAt: string;
+      status: 'waiting' | 'sent' | 'not sent';
+      note: string | null;
+    }[];
   }[];
 };
 
@@ -90,6 +97,29 @@ export function Sessions({ data }: { data: SessionsData }) {
                 >
                   {s.notice === 'sent' ? 'The group was texted.' : s.notice}
                 </span>
+                {s.reminders.length > 0 && (
+                  <span className="mt-1 flex flex-wrap gap-1.5">
+                    {s.reminders.map((r) => (
+                      <span
+                        key={r.id}
+                        title={r.note ?? undefined}
+                        className={cn(
+                          'rounded-full border px-2 py-0.5 text-[11px]',
+                          r.status === 'sent' && 'border-border text-pos',
+                          r.status === 'waiting' && 'border-border text-fg2',
+                          r.status === 'not sent' && 'border-border text-warn-fg',
+                        )}
+                      >
+                        {r.status === 'sent'
+                          ? 'Reminded'
+                          : r.status === 'waiting'
+                            ? 'Reminder'
+                            : 'Not reminded'}{' '}
+                        {when(r.sendAt)}
+                      </span>
+                    ))}
+                  </span>
+                )}
               </span>
               {s.meetUrl && (
                 <a

@@ -14,6 +14,29 @@ import { Can } from '@/lib/session';
 import type { Group } from '@/modules/membership/types';
 import { CopyLink, type NoticeData } from './Sessions';
 
+/** As the API takes them, and no more. */
+const MAX_REMINDERS = 6;
+
+/** A moment as a datetime-local input shows it, on the admin's own clock. */
+const local = (d: Date) => {
+  const z = new Date(d.getTime() - d.getTimezoneOffset() * 60_000);
+  return z.toISOString().slice(0, 16);
+};
+
+/**
+ * A first guess for the next reminder: the day before the session, else two
+ * hours before, else halfway; always after now and the reminders already set.
+ */
+function suggest(startsAt: string, taken: string[]): string {
+  const start = new Date(startsAt).getTime();
+  const now = Date.now();
+  for (const before of [24, 2, 1]) {
+    const at = start - before * 3_600_000;
+    if (at > now && !taken.includes(local(new Date(at)))) return local(new Date(at));
+  }
+  return local(new Date(now + (start - now) / 2));
+}
+
 /**
  * A session for one group: the group attending, the day and time, and the
  * Meet link, which starts as the group's own. The text the group is sent is
@@ -37,6 +60,7 @@ export function NewSession({
     startsAt: '',
     meetUrl: groups.find((g) => g.id === id)?.meetUrl ?? '',
     familyId: notice?.chosen ?? '',
+    reminders: [] as string[],
   });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(blank);
@@ -66,6 +90,9 @@ export function NewSession({
             // The admin's own clock, which is the church's.
             startsAt: new Date(form.startsAt).toISOString(),
             meetUrl: form.meetUrl,
+            reminders: form.familyId
+              ? form.reminders.filter(Boolean).map((r) => new Date(r).toISOString())
+              : [],
           },
         },
       );
@@ -120,6 +147,7 @@ export function NewSession({
                   ...(form.groupId ? [] : ['Group']),
                   ...(form.startsAt ? [] : ['Day and time']),
                   ...(form.meetUrl.trim() ? [] : ['Meet link']),
+                  ...(form.familyId && form.reminders.some((r) => !r) ? ['Reminder time'] : []),
                 ]}
                 onClick={save}
               >
@@ -199,9 +227,71 @@ export function NewSession({
                 </p>
               </div>
             )}
+            {notice && form.familyId && (
+              <Reminders
+                startsAt={form.startsAt}
+                value={form.reminders}
+                onChange={(reminders) => setForm({ ...form, reminders })}
+              />
+            )}
           </div>
         )}
       </Drawer>
     </Can>
+  );
+}
+
+/**
+ * When the group is texted again before the session, with the same template:
+ * any moments from now until the session starts, outside quiet hours.
+ */
+function Reminders({
+  startsAt,
+  value,
+  onChange,
+}: {
+  startsAt: string;
+  value: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const now = local(new Date());
+  return (
+    <fieldset className="flex flex-col gap-2 rounded-[8px] border border-border p-3">
+      <legend className="px-1 text-[12px] font-medium text-fg2">Remind them</legend>
+      <p className="text-[11.5px] text-fg3">
+        {startsAt
+          ? 'The group gets the same text again at each time below, from now until the session starts. Nothing goes out during quiet hours.'
+          : 'Choose the day and time of the session first.'}
+      </p>
+      {value.map((at, i) => (
+        <div key={i} className="flex items-end gap-2">
+          <div className="flex-1">
+            <Input
+              label={`Reminder ${i + 1}`}
+              type="datetime-local"
+              required
+              min={now}
+              max={startsAt || undefined}
+              value={at}
+              onChange={(e) => onChange(value.map((v, j) => (j === i ? e.target.value : v)))}
+            />
+          </div>
+          <Button
+            variant="ghost"
+            aria-label={`Remove reminder ${i + 1}`}
+            onClick={() => onChange(value.filter((_, j) => j !== i))}
+          >
+            Remove
+          </Button>
+        </div>
+      ))}
+      {startsAt && value.length < MAX_REMINDERS && new Date(startsAt).getTime() > Date.now() && (
+        <div>
+          <Button size="sm" onClick={() => onChange([...value, suggest(startsAt, value)])}>
+            + Add a reminder
+          </Button>
+        </div>
+      )}
+    </fieldset>
   );
 }
