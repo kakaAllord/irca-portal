@@ -28,6 +28,14 @@ import {
 export const metadata: Metadata = { title: 'GO day' };
 
 /** One GO day: its teams, where they went, and recording who they reached. */
+/**
+ * The GO day's report (a PDF the leader attaches) is hidden for now: the
+ * owner decided on 7 October 2026 that no files are kept on the server until
+ * it is settled where reports should live. The API side is untouched; set
+ * this back to true to bring the panel back.
+ */
+const REPORTS_SHOWN = false;
+
 export default async function SessionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const me = await serverApi<MeResponse>('/auth/me');
@@ -47,9 +55,10 @@ export default async function SessionPage({ params }: { params: Promise<{ id: st
     session.status !== 'CANCELLED' &&
     session.heldOn <= churchToday(me.church?.timezone);
   const planned = session.status === 'PLANNED';
-  const report = can(me, 'outreach.reports.read')
-    ? await serverApi<ReportVersions>(`/outreach/sessions/${session.id}/report/versions`)
-    : null;
+  const report =
+    REPORTS_SHOWN && can(me, 'outreach.reports.read')
+      ? await serverApi<ReportVersions>(`/outreach/sessions/${session.id}/report/versions`)
+      : null;
   const [team, areas] =
     manage && planned
       ? await Promise.all([

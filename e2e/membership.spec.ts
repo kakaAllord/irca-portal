@@ -27,8 +27,6 @@ test.describe('from the registration form to the Membership portal', () => {
     page,
     browser,
   }) => {
-    // The form, then up to 15 seconds for the API's sync job (D49).
-    test.setTimeout(90_000);
     // The visitor, on the form itself, which writes the database directly.
     const phoneCtx = await browser.newContext({ viewport: { width: 400, height: 860 } });
     const visitor = await phoneCtx.newPage();
@@ -70,30 +68,9 @@ test.describe('from the registration form to the Membership portal', () => {
       await form.end();
     }
 
-    // The API's sync job runs every 15 seconds (D49): wait for it to make
-    // the person, as the office would wait for them to appear.
-    const owner = new pg.Client({ connectionString: process.env.DATABASE_URL });
-    await owner.connect();
-    try {
-      await expect
-        .poll(
-          async () =>
-            (
-              await owner.query(
-                `select p.full_name from people p
-                 join registrations r on r.id = p.registration_id
-                 where r.token = $1 and r.handled_at is not null`,
-                [token],
-              )
-            ).rows[0]?.full_name,
-          { timeout: 30_000 },
-        )
-        .toBe(name);
-    } finally {
-      await owner.end();
-    }
-
-    // The pastor finds them, opens the row, and reads the prayer.
+    // The pastor finds them, opens the row, and reads the prayer. Nothing
+    // has run since the form wrote: the API catches up with it on the
+    // pastor's own requests (D51), so the first page already has them.
     await signIn(page, PASTOR);
     await page.getByRole('link', { name: 'Members' }).click();
     await page.getByPlaceholder('Search name or phone…').fill(name);
