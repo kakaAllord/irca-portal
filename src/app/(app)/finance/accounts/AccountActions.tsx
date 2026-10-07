@@ -3,7 +3,12 @@
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { PAYMENT_METHODS, type FinanceAccountView, type PaymentMethod } from '@/shared';
+import {
+  PAYMENT_METHODS,
+  type CardStyle,
+  type FinanceAccountView,
+  type PaymentMethod,
+} from '@/shared';
 import { clientApi } from '@/lib/api/client';
 import { ApiRequestError } from '@/lib/api/errors';
 import { Alert } from '@/components/ui/Alert';
@@ -14,8 +19,10 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Can } from '@/lib/session';
+import { defaultCardStyle } from '@/modules/finance/components/BankCard';
+import { CardStylePicker } from '@/modules/finance/components/CardStylePicker';
 
-type Method = { id: string; name: string; isActive: boolean };
+type Method = { id: string; name: string; isActive: boolean; kind: PaymentMethod };
 type Candidate = { id: string; name: string };
 
 /**
@@ -140,7 +147,7 @@ export function NewMethodButton() {
 }
 
 export function MethodActions({ method }: { method: Method }) {
-  const [open, setOpen] = useState<'rename' | 'delete' | null>(null);
+  const [open, setOpen] = useState<'rename' | 'delete' | 'stop' | null>(null);
   const [name, setName] = useState(method.name);
   const { send, busy, error, similar, reset } = useSend();
   const close = () => {
@@ -151,17 +158,37 @@ export function MethodActions({ method }: { method: Method }) {
 
   return (
     <Can permission="finance.accounts.manage">
-      <ActionsMenu label={`Actions for ${method.name}`}>
-        <Item onClick={() => setOpen('rename')}>Rename</Item>
-        <Item
-          onClick={() =>
-            void send(`${path}/${method.isActive ? 'deactivate' : 'activate'}`, 'POST')
-          }
-        >
-          {method.isActive ? 'Turn off' : 'Turn on'}
+      <ActionsMenu label={`Manage ${method.name}`}>
+        <Item onClick={() => setOpen('rename')} hint="Every account and entry shows the new name">
+          Rename
         </Item>
-        <Item onClick={() => setOpen('delete')}>Delete</Item>
+        {method.isActive ? (
+          <Item onClick={() => setOpen('stop')} hint="No longer offered for new entries">
+            Stop using…
+          </Item>
+        ) : (
+          <Item
+            onClick={() => void send(`${path}/activate`, 'POST')}
+            hint="Offered again for new entries"
+          >
+            Use again
+          </Item>
+        )}
+        <Item onClick={() => setOpen('delete')} hint="Only if it never had an account" danger>
+          Delete…
+        </Item>
       </ActionsMenu>
+      <StopUsing
+        open={open === 'stop'}
+        onClose={close}
+        what={method.name}
+        detail={`Its accounts stop being offered when recording, and keep their balances and every entry. You can use ${method.name} again at any time.`}
+        busy={busy}
+        error={error}
+        onConfirm={async () => {
+          if (await send(`${path}/deactivate`, 'POST')) close();
+        }}
+      />
       {error && !open && <span className="ml-2 text-[11.5px] text-danger">{error}</span>}
 
       <Drawer
@@ -196,7 +223,7 @@ export function MethodActions({ method }: { method: Method }) {
         open={open === 'delete'}
         onClose={close}
         title={`Delete ${method.name}?`}
-        description="Only a method that never had an account can be deleted. Otherwise turn it off."
+        description="Only a method that never had an account can be deleted. Otherwise stop using it: its history stays."
         footer={
           <>
             <Button variant="ghost" onClick={close}>
@@ -227,13 +254,20 @@ const today = () => new Date().toISOString().slice(0, 10);
 export function NewAccountButton({
   methods,
   baseCurrency,
+  methodId,
+  inline = false,
 }: {
   methods: Method[];
   baseCurrency: string;
+  /** The method it starts under, when added from that method's row. */
+  methodId?: string;
+  /** A quiet link in that method's heading rather than the page's button. */
+  inline?: boolean;
 }) {
   const active = methods.filter((m) => m.isActive);
+  const under = active.find((m) => m.id === methodId);
   const blank = {
-    methodId: active[0]?.id ?? '',
+    methodId: under?.id ?? active[0]?.id ?? '',
     name: '',
     currency: baseCurrency,
     number: '',
@@ -243,12 +277,16 @@ export function NewAccountButton({
   };
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState(blank);
+  // Until someone picks a colour, the card follows the method chosen.
+  const [cardStyle, setCardStyle] = useState<CardStyle | null>(null);
+  const style = cardStyle ?? defaultCardStyle(active.find((m) => m.id === values.methodId)?.kind);
   const { send, busy, error, fieldErrors, similar, reset } = useSend();
   const set = (key: keyof typeof blank, value: string) =>
     setValues((previous) => ({ ...previous, [key]: value }));
   const close = () => {
     setOpen(false);
     setValues(blank);
+    setCardStyle(null);
     reset();
   };
 
@@ -256,7 +294,17 @@ export function NewAccountButton({
 
   return (
     <Can permission="finance.accounts.manage">
-      <Button onClick={() => setOpen(true)}>+ Account</Button>
+      {inline ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="rounded-full px-2.5 py-1 text-[12px] font-medium text-accent hover:bg-hover"
+        >
+          + Add a {under?.name ?? ''} account
+        </button>
+      ) : (
+        <Button onClick={() => setOpen(true)}>+ Add account</Button>
+      )}
       <Drawer
         open={open}
         onClose={close}
@@ -278,6 +326,7 @@ export function NewAccountButton({
               onClick={async () => {
                 const ok = await send('/finance/accounts', 'POST', {
                   ...values,
+                  cardStyle: style,
                   number: values.number || undefined,
                   notes: values.notes || undefined,
                   confirmDistinct: Boolean(similar),
@@ -308,6 +357,7 @@ export function NewAccountButton({
             error={fieldErrors.name?.[0]}
             onChange={(e) => set('name', e.target.value)}
           />
+          <CardStylePicker value={style} onChange={setCardStyle} name={values.name} />
           <Input
             label="Currency"
             required
@@ -384,16 +434,23 @@ function OpeningFields({
 
 export function AccountActions({
   account,
+  kind,
   methodActive,
+  onCard = false,
 }: {
   account: FinanceAccountView;
+  /** Its method's kind, whose colours it wears until a template is chosen. */
+  kind: PaymentMethod;
   methodActive: boolean;
+  /** Drawn on the face of an account's card, in its colours. */
+  onCard?: boolean;
 }) {
-  const [open, setOpen] = useState<'edit' | 'ask' | 'delete' | null>(null);
+  const [open, setOpen] = useState<'edit' | 'ask' | 'delete' | 'stop' | null>(null);
   const edit = {
     name: account.name,
     number: account.number ?? '',
     notes: account.notes,
+    cardStyle: account.cardStyle ?? defaultCardStyle(kind),
     currency: account.currency,
     openingBalance: account.openingBalance,
     openingDate: account.openingDate,
@@ -418,7 +475,7 @@ export function AccountActions({
     Object.entries(values).filter(
       ([key, value]) =>
         value !== edit[key as keyof typeof edit] &&
-        (!used || ['name', 'number', 'notes'].includes(key)),
+        (!used || ['name', 'number', 'notes', 'cardStyle'].includes(key)),
     ),
   );
   const asked = Object.fromEntries(
@@ -429,22 +486,46 @@ export function AccountActions({
 
   return (
     <Can permission="finance.accounts.manage">
-      <ActionsMenu label={`Actions for ${account.name}`}>
-        <Item onClick={() => setOpen('edit')}>Change details</Item>
+      <ActionsMenu label={`Manage ${account.name}`} onCard={onCard}>
+        <Item onClick={() => setOpen('edit')} hint="Name, number, colour and notes">
+          Edit details
+        </Item>
         {used && !account.openRequest && (
-          <Item onClick={() => setOpen('ask')}>Ask to change the opening balance or currency</Item>
-        )}
-        {(account.isActive || methodActive) && (
-          <Item
-            onClick={() =>
-              void send(`${path}/${account.isActive ? 'deactivate' : 'activate'}`, 'POST')
-            }
-          >
-            {account.isActive ? 'Turn off' : 'Turn on'}
+          <Item onClick={() => setOpen('ask')} hint="An administrator approves it">
+            Correct the opening balance…
           </Item>
         )}
-        {!used && <Item onClick={() => setOpen('delete')}>Delete</Item>}
+        {account.isActive ? (
+          <Item onClick={() => setOpen('stop')} hint="No longer offered for new entries">
+            Stop using…
+          </Item>
+        ) : (
+          methodActive && (
+            <Item
+              onClick={() => void send(`${path}/activate`, 'POST')}
+              hint="Offered again for new entries"
+            >
+              Use again
+            </Item>
+          )
+        )}
+        {!used && (
+          <Item onClick={() => setOpen('delete')} hint="Nothing was recorded against it" danger>
+            Delete…
+          </Item>
+        )}
       </ActionsMenu>
+      <StopUsing
+        open={open === 'stop'}
+        onClose={close}
+        what={account.name}
+        detail={`It stops being offered when recording income and expenses. Its balance and its ${account.uses} ${account.uses === 1 ? 'entry stay' : 'entries stay'} in the books and the reports, and you can use it again at any time.`}
+        busy={busy}
+        error={error}
+        onConfirm={async () => {
+          if (await send(`${path}/deactivate`, 'POST')) close();
+        }}
+      />
 
       <Drawer
         open={open === 'edit'}
@@ -481,6 +562,11 @@ export function AccountActions({
             required
             value={values.name}
             onChange={(e) => set('name', e.target.value)}
+          />
+          <CardStylePicker
+            value={values.cardStyle as CardStyle}
+            onChange={(v) => set('cardStyle', v)}
+            name={values.name}
           />
           <Input
             label="Account or till number"
@@ -688,18 +774,35 @@ export function SetRateButton({
 
 // ── The menu ────────────────────────────────────────────────────────────
 
-function ActionsMenu({ label, children }: { label: string; children: ReactNode }) {
+function ActionsMenu({
+  label,
+  children,
+  onCard = false,
+}: {
+  label: string;
+  children: ReactNode;
+  onCard?: boolean;
+}) {
   return (
     <Menu>
       <MenuButton
         aria-label={label}
-        className="inline-flex h-8 items-center rounded-[7px] border border-border px-2.5 text-[12px] text-fg2 hover:bg-hover"
+        title={label}
+        className={
+          onCard
+            ? 'flex size-8 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none'
+            : 'flex size-8 items-center justify-center rounded-full border border-border text-fg2 hover:bg-hover hover:text-fg'
+        }
       >
-        Change ▾
+        <svg viewBox="0 0 16 16" className="size-4" fill="currentColor" aria-hidden="true">
+          <circle cx="3.5" cy="8" r="1.4" />
+          <circle cx="8" cy="8" r="1.4" />
+          <circle cx="12.5" cy="8" r="1.4" />
+        </svg>
       </MenuButton>
       <MenuItems
         anchor="bottom end"
-        className="z-20 mt-1 w-64 rounded-[10px] border border-border bg-surface py-1 shadow-xl"
+        className="z-30 mt-1 w-72 rounded-[12px] border border-border bg-surface p-1 shadow-xl"
       >
         {children}
       </MenuItems>
@@ -707,16 +810,70 @@ function ActionsMenu({ label, children }: { label: string; children: ReactNode }
   );
 }
 
-function Item({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+function Item({
+  onClick,
+  children,
+  hint,
+  danger = false,
+}: {
+  onClick: () => void;
+  children: ReactNode;
+  /** One line under the action, saying what it does. */
+  hint?: string;
+  danger?: boolean;
+}) {
   return (
     <MenuItem>
       <button
         type="button"
         onClick={onClick}
-        className="w-full px-3 py-2 text-left text-[12.5px] text-fg data-focus:bg-hover"
+        className="flex w-full flex-col rounded-[8px] px-3 py-2 text-left data-focus:bg-hover"
       >
-        {children}
+        <span className={`text-[12.5px] font-medium ${danger ? 'text-danger' : 'text-fg'}`}>
+          {children}
+        </span>
+        {hint && <span className="text-[11px] text-fg3">{hint}</span>}
       </button>
     </MenuItem>
+  );
+}
+
+/** Asking before something stops being offered, and saying what that means. */
+function StopUsing({
+  open,
+  onClose,
+  what,
+  detail,
+  busy,
+  error,
+  onConfirm,
+}: {
+  open: boolean;
+  onClose: () => void;
+  what: string;
+  detail: string;
+  busy: boolean;
+  error: string | null;
+  onConfirm: () => void;
+}) {
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={`Stop using ${what}?`}
+      description={detail}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Keep using it
+          </Button>
+          <Button loading={busy} onClick={onConfirm}>
+            Stop using it
+          </Button>
+        </>
+      }
+    >
+      {error && <Alert tone="error">{error}</Alert>}
+    </Dialog>
   );
 }

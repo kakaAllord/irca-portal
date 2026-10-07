@@ -77,6 +77,7 @@ export const NO_REFERRER = { key: 'Referrer-Policy', value: 'no-referrer' };
 export function carriesToken(pathname: string): boolean {
   return (
     pathname.startsWith('/r/') ||
+    pathname.startsWith('/a/') ||
     pathname.startsWith('/reset-password') ||
     pathname.startsWith('/accept-invite')
   );

@@ -9,17 +9,10 @@ import { Alert } from '@/components/ui/Alert';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import type { ErrorList, ErrorLookup, ErrorView } from '@/modules/dev/types';
+import { ErrorFilters } from './ErrorFilters';
 
 export const metadata: Metadata = { title: 'Errors' };
-
-const SOURCES = [
-  { value: '', label: 'Everywhere' },
-  { value: 'API', label: 'The API' },
-  { value: 'PORTAL_SERVER', label: 'Building a page' },
-  { value: 'PORTAL_BROWSER', label: 'In the browser' },
-];
 
 const SOURCE_LABEL: Record<ErrorView['source'], string> = {
   API: 'The API',
@@ -83,19 +76,10 @@ export default async function ErrorsPage({
       {lookup && <Answer lookup={lookup} timezone={timezone} />}
 
       <section className="mt-8">
-        <h2 className="mb-2 text-[13px] font-semibold text-fg">Latest errors</h2>
-        <form method="get" className="mb-3 flex flex-wrap items-end gap-2">
-          <Select
-            label="Where"
-            name="source"
-            defaultValue={params.source ?? ''}
-            options={SOURCES}
-          />
-          <Input label="Day" name="day" type="date" defaultValue={params.day ?? ''} />
-          <Button type="submit" variant="secondary">
-            Show
-          </Button>
-        </form>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h2 className="text-[13px] font-semibold text-fg">Latest errors</h2>
+          <ErrorFilters />
+        </div>
         {list.rows.length === 0 ? (
           <EmptyState title="No errors">
             {params.source || params.day

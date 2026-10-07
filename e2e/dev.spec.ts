@@ -25,7 +25,7 @@ test.describe('the dev console', () => {
     await expect(page.getByRole('heading', { name: 'Logs', level: 1 })).toBeVisible();
 
     // D43: viewing as someone covers what the developer needs to see.
-    for (const name of ['People', 'Departments', 'Activity', 'Requests']) {
+    for (const name of ['Users', 'Departments', 'Activity', 'Requests']) {
       await expect(page.getByRole('link', { name, exact: true })).toHaveCount(0);
     }
     await page.goto('/admin/users');
@@ -36,7 +36,7 @@ test.describe('the dev console', () => {
     // Someone's page fails in their browser; the page sends it with the
     // reference it shows them (docs/plan/11, steps 11.3 to 11.5).
     const clerk = await browser.newPage();
-    await signIn(clerk, { email: 'clerk@irca.local', password: 'clerk-password-123' });
+    await signIn(clerk, { email: 'mhazini2@irca.local', password: 'manager-password-123' });
     const reference = `B${Date.now().toString().slice(-10)}`;
     const sent = await clerk.request.post('/api/errors', {
       headers: { 'x-irca-client': 'portal' },
@@ -58,7 +58,7 @@ test.describe('the dev console', () => {
       .fill(`Something went wrong. Send this to your developer: ${reference} Copy`);
     await page.getByRole('button', { name: 'Look up' }).click();
     await expect(page.getByRole('heading', { name: 'What they saw' })).toBeVisible();
-    await expect(page.getByText('Neema Mollel <clerk@irca.local>')).toBeVisible();
+    await expect(page.getByText('Neema Mollel <mhazini2@irca.local>')).toBeVisible();
     await expect(page.getByText(/reading 'amount'/).first()).toBeVisible();
     await expect(page.getByRole('link', { name: new RegExp(reference) })).toBeVisible();
 
@@ -74,8 +74,8 @@ test.describe('the dev console', () => {
     // An administrator views as the finance clerk from her own page.
     const admin = await browser.newPage();
     await signIn(admin, ADMIN);
-    await admin.getByRole('link', { name: 'People', exact: true }).click();
-    await admin.getByRole('link', { name: 'Neema Mollel clerk@irca.local' }).click();
+    await admin.getByRole('link', { name: 'Users', exact: true }).click();
+    await admin.getByRole('link', { name: 'Neema Mollel mhazini2@irca.local' }).click();
     await admin.getByRole('button', { name: 'View as Neema' }).click();
     await expect(admin.getByText('Viewing as Neema Mollel', { exact: true })).toBeVisible();
     await admin.getByRole('status').getByRole('button', { name: 'Back to my view' }).click();
@@ -89,7 +89,7 @@ test.describe('the dev console', () => {
     const session = page.getByRole('button', { name: /IRCA Admin viewed as Neema Mollel/ });
     await session.first().click();
     const drawer = page.getByRole('dialog');
-    await expect(drawer.getByText('Neema Mollel <clerk@irca.local>')).toBeVisible();
+    await expect(drawer.getByText('Neema Mollel <mhazini2@irca.local>')).toBeVisible();
     await expect(drawer.getByText(/pages? seen, in order/)).toBeVisible();
     await page.keyboard.press('Escape');
 
@@ -140,7 +140,7 @@ test.describe('the dev console', () => {
     await expect(page.getByText(/[a-z]{3,}@irca\.local/)).toHaveCount(0);
   });
 
-  test('the church settings and the registration keys', async ({ page }) => {
+  test('the church settings, email, texts and the log level', async ({ page }) => {
     await signIn(page, DEV);
     await page.getByRole('link', { name: 'Settings', exact: true }).click();
 
@@ -161,17 +161,33 @@ test.describe('the dev console', () => {
       page.getByRole('main').getByText('International Revival Church Arusha'),
     ).toBeVisible();
 
-    // Named for this run: the test database keeps the keys earlier runs made.
-    const name = `Made by a browser test ${Date.now()}`;
-    await page.getByRole('button', { name: '+ New key' }).click();
-    await page.getByRole('dialog').getByLabel('Name').fill(name);
-    await page.getByRole('button', { name: 'Make the key' }).click();
-    await expect(page.getByText('Copy this key now. It is not shown again.')).toBeVisible();
-    await page.getByRole('button', { name: 'I have copied it' }).click();
-    const row = page.getByRole('row', { name: new RegExp(name) });
-    await row.getByRole('button', { name: 'Revoke' }).click();
-    await page.getByRole('button', { name: 'Revoke it' }).click();
-    await expect(row.getByText('Revoked')).toBeVisible();
+    // Email: an account saved, its password never shown again, and removed
+    // so the next journey still finds emails going to the log (D52).
+    const email = page.locator('section', { has: page.getByRole('heading', { name: 'Email' }) });
+    await email.getByLabel('Server').fill('127.0.0.1');
+    await email.getByLabel('Port').fill('1');
+    await email.getByLabel('Username').fill('office@example.org');
+    await email.getByLabel(/^Password/).fill('abcd efgh ijkl mnop');
+    await email.getByLabel('From').fill('IRCA <office@example.org>');
+    await email.getByRole('button', { name: 'Save' }).click();
+    await expect(email.getByText('Saved. Send yourself a test to be sure.')).toBeVisible();
+    await expect(page.getByText('abcd efgh ijkl mnop')).toHaveCount(0);
+    await email.getByRole('button', { name: 'Remove the account' }).click();
+    await expect(email.getByText(/No account yet/)).toBeVisible();
+
+    // Texts: the link to give Beem, with its password in it.
+    const texts = page.locator('section', {
+      has: page.getByRole('heading', { name: 'Texts (Beem)' }),
+    });
+    await expect(texts.getByText(/\/v1\/public\/comms\/inbound\?key=\S{24,}/)).toBeVisible();
+
+    // The log level, changed and put back.
+    const log = page.locator('section', { has: page.getByRole('heading', { name: 'Log level' }) });
+    await log.getByLabel('Level').selectOption('debug');
+    await log.getByRole('button', { name: 'Change' }).click();
+    await expect(log.getByText('Changed. The next lines are written at this level.')).toBeVisible();
+    await log.getByLabel('Level').selectOption('error');
+    await log.getByRole('button', { name: 'Change' }).click();
   });
 
   test('alerts: who hears, the storage size, and a test sent on purpose', async ({ page }) => {

@@ -97,9 +97,9 @@ export function Alerts({ alerts }: { alerts: AlertsSettings }) {
         <div>
           <h2 className="text-[13px] font-semibold text-fg">Alerts</h2>
           <p className="mt-0.5 max-w-xl text-[11.5px] text-fg3">
-            Checked every ten minutes: requests failing, emails given up on, jobs failing twice,
-            storage filling, text credit low and texts failing. Each is sent once when it starts,
-            again twice a day while it lasts, and once when it clears.
+            Checked every ten minutes while the system is in use: requests failing, emails given up
+            on, jobs failing twice, storage filling, text credit low and texts failing. Each is sent
+            once when it starts, again twice a day while it lasts, and once when it clears.
           </p>
         </div>
         <Button size="sm" variant="secondary" onClick={test} disabled={testing}>

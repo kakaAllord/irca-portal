@@ -11,7 +11,7 @@ import { PeopleFilters } from './PeopleFilters';
 import { InviteButton } from './InviteButton';
 import { ViewAsButton } from '@/components/shell/ViewAsButton';
 
-export const metadata: Metadata = { title: 'People' };
+export const metadata: Metadata = { title: 'Users' };
 
 export type PersonRow = {
   userId: string;
@@ -48,7 +48,7 @@ export default async function PeoplePage({
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const me = await serverApi<MeResponse>('/auth/me');
-  if (!can(me, 'admin.users.read')) return <ForbiddenState what="the people of this church" />;
+  if (!can(me, 'admin.users.read')) return <ForbiddenState what="the users of this church" />;
 
   const params = await searchParams;
   const query = new URLSearchParams();
@@ -64,7 +64,7 @@ export default async function PeoplePage({
   return (
     <>
       <PageHeader
-        title="People"
+        title="Users"
         subtitle={`Everyone who can sign in to ${me.church?.name ?? 'this church'}.`}
         actions={can(me, 'admin.users.invite') && <InviteButton />}
       />
@@ -79,7 +79,7 @@ export default async function PeoplePage({
             </Link>
           </EmptyState>
         ) : (
-          <Table head={['Person', 'What they are', 'Last active', '', '']}>
+          <Table head={['User', 'What they are', 'Last active', '', '']}>
             {rows.map((person) => (
               <Row key={person.userId}>
                 <Cell>

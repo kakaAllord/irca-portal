@@ -18,11 +18,14 @@ export function SetBudget({
   month,
   monthName,
   currency,
+  compact = false,
 }: {
   line: BudgetLine;
   month: string;
   monthName: string;
   currency: string;
+  /** A small round button, inside a chip. */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -57,9 +60,19 @@ export function SetBudget({
 
   return (
     <Can permission="finance.budgets.manage">
-      <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
-        {changing ? 'Change' : 'Set budget'}
-      </Button>
+      {compact ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="rounded-full bg-chip px-2.5 py-0.5 text-[11.5px] font-medium text-fg hover:bg-hover"
+        >
+          Set budget
+        </button>
+      ) : (
+        <Button size="sm" variant="secondary" onClick={() => setOpen(true)}>
+          {changing ? 'Change budget' : 'Set budget'}
+        </Button>
+      )}
       <Drawer
         open={open}
         onClose={() => setOpen(false)}

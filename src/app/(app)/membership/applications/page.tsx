@@ -12,16 +12,13 @@ import { ApplicationActions, NewApplication } from './ApplicationActions';
 
 export const metadata: Metadata = { title: 'Applications' };
 
-type Status = 'UNDER_REVIEW' | 'APPROVED' | 'CONFIRMED' | 'REJECTED' | 'WITHDRAWN';
+type Status = 'UNDER_REVIEW' | 'APPROVED';
 export type Application = {
   id: string;
   status: Status;
   source: 'FORM' | 'OFFICE';
   submittedAt: string;
   decidedAt: string | null;
-  rejectReason: string | null;
-  availableOn: string | null;
-  canConfirm: boolean;
   person: {
     id: string;
     fullName: string;
@@ -29,24 +26,21 @@ export type Application = {
     stage: Stage;
     memberNumber: number | null;
     attendsSince: string;
+    saved: boolean;
     baptised: boolean;
     foundationClass: 'finished' | 'dropped' | 'attending' | 'not started';
   };
 };
 
 const TABS: [Status, string][] = [
-  ['UNDER_REVIEW', 'Under review'],
-  ['APPROVED', 'Approved'],
-  ['CONFIRMED', 'Confirmed'],
-  ['REJECTED', 'Not approved'],
-  ['WITHDRAWN', 'Withdrawn'],
+  ['UNDER_REVIEW', 'Waiting application approval'],
+  ['APPROVED', 'Waiting confirmation'],
 ];
 
 const STEPS = [
   ['Application submitted', 'From the form, or entered by an administrator.'],
-  ['Under review', 'A pastor or an administrator looks at it.'],
-  ['Approved', 'Approved by a pastor or an administrator.'],
-  ['Confirmed', 'After the probation month they become members, with a number.'],
+  ['Waiting application approval', 'A pastor or an administrator approves it, or not.'],
+  ['Waiting confirmation', 'Approved, and waiting for the pastors to confirm.'],
 ] as const;
 
 /** Asking to become a member, and what was decided. */
@@ -63,10 +57,9 @@ export default async function ApplicationsPage({
   const status = (TABS.find(([key]) => key === raw)?.[0] ?? 'UNDER_REVIEW') as Status;
   const data = await serverApi<{
     counts: Partial<Record<Status, number>>;
-    probationDays: number;
     rows: Application[];
   }>(`/membership/applications?status=${status}`);
-  const reached = { UNDER_REVIEW: 2, APPROVED: 3, CONFIRMED: 4, REJECTED: 2, WITHDRAWN: 1 }[status];
+  const reached = { UNDER_REVIEW: 2, APPROVED: 3 }[status];
 
   return (
     <>
@@ -118,24 +111,15 @@ export default async function ApplicationsPage({
                     <span className="text-[11.5px] text-fg3">
                       Applied {day(a.submittedAt)}
                       {a.source === 'FORM' && ' on the form'} · attends since{' '}
-                      {day(a.person.attendsSince)} · foundation class {a.person.foundationClass} ·{' '}
-                      {a.person.baptised ? 'baptised' : 'not baptised'}
-                      {a.rejectReason && ` · ${a.rejectReason}`}
+                      {day(a.person.attendsSince)} · foundation class {a.person.foundationClass}
+                      {a.status === 'APPROVED' && a.decidedAt && ` · approved ${day(a.decidedAt)}`}
                     </span>
                   </span>
-                  <Badge
-                    tone={
-                      a.status === 'CONFIRMED'
-                        ? 'positive'
-                        : a.status === 'REJECTED'
-                          ? 'danger'
-                          : 'neutral'
-                    }
-                  >
-                    {a.status === 'CONFIRMED' && a.person.memberNumber
-                      ? `Member ${a.person.memberNumber}`
-                      : STAGE_LABEL[a.person.stage]}
-                  </Badge>
+                  <span className="flex gap-1.5">
+                    <Faith yes={a.person.saved} label="Saved" />
+                    <Faith yes={a.person.baptised} label="Baptised" />
+                  </span>
+                  <Badge tone="neutral">{STAGE_LABEL[a.person.stage]}</Badge>
                   <ApplicationActions application={a} />
                 </li>
               ))}
@@ -157,11 +141,7 @@ export default async function ApplicationsPage({
                 />
                 <span className="flex flex-col">
                   <span className="text-[12.5px] font-medium text-fg">{title}</span>
-                  <span className="text-[11.5px] text-fg3">
-                    {i === 3
-                      ? `After ${data.probationDays} days they become members, with a number.`
-                      : note}
-                  </span>
+                  <span className="text-[11.5px] text-fg3">{note}</span>
                 </span>
               </li>
             ))}
@@ -169,5 +149,34 @@ export default async function ApplicationsPage({
         </aside>
       </div>
     </>
+  );
+}
+
+/**
+ * Saved or baptised, at a glance: a green tick when they are, a plain cross
+ * when not yet, always with the word, so it never rests on colour alone.
+ */
+function Faith({ yes, label }: { yes: boolean; label: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11.5px] font-medium',
+        yes ? 'border-pos-br bg-pos-bg text-pos' : 'border-border bg-surface2 text-fg3',
+      )}
+    >
+      <svg
+        viewBox="0 0 20 20"
+        className="size-3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        {yes ? <path d="M4 10.5l3.5 3.5L16 6" /> : <path d="M6 6l8 8M14 6l-8 8" />}
+      </svg>
+      {yes ? label : `Not ${label.toLowerCase()}`}
+    </span>
   );
 }

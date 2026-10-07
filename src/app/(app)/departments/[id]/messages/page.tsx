@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { serverApi } from '@/lib/api/server';
+import { MyDepartmentsLink } from '@/modules/departments/MyDepartmentsLink';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -42,9 +42,7 @@ export default async function DepartmentMessagesPage({
   const base = `/departments/${id}/messages`;
   return (
     <>
-      <Link href="/departments" className="text-[12px] text-fg2 hover:text-fg">
-        ← My departments
-      </Link>
+      <MyDepartmentsLink />
       <div className="mt-2">
         <PageHeader
           title={department.name}

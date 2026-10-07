@@ -8,6 +8,8 @@ import { ActivityList } from './ActivityList';
 
 export const metadata: Metadata = { title: 'Activity' };
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
 export type ActivityRow = {
   id: string;
   at: string;
@@ -30,7 +32,11 @@ export default async function ActivityPage({
 
   const params = await searchParams;
   const query = new URLSearchParams({ limit: '50' });
-  for (const key of ['action', 'from', 'to'] as const) if (params[key]) query.set(key, params[key]);
+  if (params.action) query.set('action', params.action);
+  // A hand-edited or stale address is ignored rather than turned into an error page.
+  for (const key of ['from', 'to'] as const) {
+    if (params[key] && ISO_DATE.test(params[key])) query.set(key, params[key]);
+  }
 
   const { rows } = await serverApi<{ rows: ActivityRow[]; nextBefore: string | null }>(
     `/admin/audit?${query}`,

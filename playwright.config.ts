@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { config } from 'dotenv';
 
 // The journeys run against their own API and portal, on their own ports and
 // the test database, so they never collide with servers you have running for
@@ -6,14 +7,25 @@ import { defineConfig, devices } from '@playwright/test';
 const API_PORT = 4100;
 const PORTAL_PORT = 3100;
 const FORM_PORT = 3101;
-/** The seed's key for IRCA's form. Test and development only. */
-const FORM_KEY = 'irk_local_registration_form_key_not_for_production';
 /**
  * The journeys need the backend and the form running too. They are their own
  * repositories, checked out next to this one unless these say otherwise.
  */
 export const BACKEND_DIR = process.env.IRCA_BACKEND_DIR ?? '../backend';
 const REGISTRATION_DIR = process.env.IRCA_REGISTRATION_DIR ?? '../registration';
+
+// The test database's URL, as the owner, from the backend's own test settings.
+config({ path: `${BACKEND_DIR}/.env.test`, quiet: true });
+/**
+ * The same database as the registration form reaches it (D49): logged in as
+ * the owner here, and switched to irca_form as the connection opens, so the
+ * form runs with exactly its production grants.
+ */
+export function formDatabaseUrl(): string {
+  const url = new URL(process.env.DATABASE_URL!);
+  url.searchParams.set('options', '-c role=irca_form');
+  return url.toString();
+}
 
 export default defineConfig({
   testDir: 'e2e',
@@ -65,15 +77,12 @@ export default defineConfig({
       timeout: 240_000,
     },
     {
-      // The visitor's form, on the API, as it runs after the cutover.
+      // The visitor's form, writing the test database itself as irca_form,
+      // as it runs since D49. The API's sync job picks its rows up.
       command: `npm run -s build && npm run -s start -- -p ${FORM_PORT}`,
       cwd: REGISTRATION_DIR,
       url: `http://localhost:${FORM_PORT}/`,
-      env: {
-        REGISTRATION_BACKEND: 'api',
-        API_INTERNAL_URL: `http://localhost:${API_PORT}`,
-        REGISTRATION_API_KEY: FORM_KEY,
-      },
+      env: { DATABASE_URL: formDatabaseUrl() },
       reuseExistingServer: false,
       timeout: 240_000,
     },

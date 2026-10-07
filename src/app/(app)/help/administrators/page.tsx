@@ -22,7 +22,7 @@ export default function AdministratorsGuidePage() {
 
       <Step n={2} title="Give someone access">
         <p>
-          A pastor or another administrator: <strong>Admin → People → + Invite person</strong>,
+          A pastor or another administrator: <strong>Admin → Users → + Invite user</strong>,
           their email and name, and tick what they are. They get an email and choose their own
           password.
         </p>
@@ -61,7 +61,7 @@ export default function AdministratorsGuidePage() {
       <Step n={5} title="Membership, and seeing as someone">
         <p>
           You can do everything in Membership the pastors can, deciding applications included:
-          approve, reject, and confirm after the probation month. Prayer requests are the
+          approve, reject, and confirm whenever the pastors are ready. Prayer requests are the
           pastors&apos; alone.
         </p>
         <p>

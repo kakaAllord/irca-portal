@@ -3,7 +3,13 @@ import type { Stage } from '../membership/types';
 
 /** What the departments API sends, as the portal reads it (D28). */
 
-export type Portal = { key: string; name: string; enabled: boolean };
+export type Portal = {
+  key: string;
+  name: string;
+  enabled: boolean;
+  /** Being a member signs someone in to it (Finance, Communications); not Outreach (D57). */
+  membersSignIn: boolean;
+};
 
 export type DepartmentRow = {
   id: string;

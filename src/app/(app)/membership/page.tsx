@@ -5,7 +5,7 @@ import { serverApi } from '@/lib/api/server';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
-import { NoteDrawer } from '@/modules/membership/components/NoteDrawer';
+import { DonutChart } from '@/modules/membership/components/DonutChart';
 import { when } from '@/modules/membership/types';
 import { DashboardExport } from './DashboardExport';
 
@@ -36,7 +36,6 @@ type Dashboard = {
       }[]
     | null;
   heard: { label: string; count: number; share: number }[];
-  heardOtherCount: number;
   incomplete: {
     total: number;
     rows: {
@@ -60,7 +59,6 @@ export default async function MembershipDashboard() {
     day: 'numeric',
     month: 'long',
   });
-  const heardMax = Math.max(1, ...data.heard.map((h) => h.count));
 
   const tile = (label: string, stat: Stat | number) => {
     const s = typeof stat === 'number' ? null : stat;
@@ -189,7 +187,6 @@ export default async function MembershipDashboard() {
                       </span>
                     )}
                   </span>
-                  <NoteDrawer personId={c.personId} name={c.fullName} />
                 </li>
               ))}
             </ul>
@@ -205,24 +202,10 @@ export default async function MembershipDashboard() {
               </Link>
             )}
           </div>
-          <div className="flex h-32 items-end gap-3">
-            {data.heard.map((h) => (
-              <div key={h.label} className="flex flex-1 flex-col items-center gap-1">
-                <span className="text-[11px] tabular-nums text-fg2">{h.count}</span>
-                <span
-                  className="block w-full rounded-t-[3px] bg-neutral-bar"
-                  style={{ height: `${Math.max((h.count / heardMax) * 80, 3)}px` }}
-                />
-                <span className="truncate text-[10.5px] text-fg3">{h.label}</span>
-              </div>
-            ))}
-            {data.heard.length === 0 && <p className="text-[12.5px] text-fg3">No answers yet.</p>}
-          </div>
-          {data.heardOtherCount > 0 && can(me, 'membership.insights.read') && (
-            <Link href="/membership/insights" className="mt-3 block text-[12px] text-accent">
-              {data.heardOtherCount} people typed their own answer — read them →
-            </Link>
-          )}
+          <DonutChart
+            name="People"
+            slices={data.heard.map((h) => ({ label: h.label, value: h.count, share: h.share }))}
+          />
         </section>
 
         <section className="rounded-[10px] border border-border bg-surface p-4">

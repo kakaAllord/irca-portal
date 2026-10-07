@@ -1,4 +1,6 @@
 import type { Instrumentation } from 'next';
+import { visitorHeaders } from '@/shared';
+import { sessionCookieName } from '@/lib/auth/session-cookie';
 /* eslint-disable no-console -- the portal's own log is the last place an unreported error can go */
 
 /**
@@ -42,7 +44,7 @@ export const onRequestError: Instrumentation.onRequestError = async (err, reques
     if (e.name === 'AbortError' || /stream closed early|aborted/i.test(String(e.message))) return;
 
     const api = process.env.API_INTERNAL_URL;
-    const name = process.env.SESSION_COOKIE_NAME ?? 'irca_session';
+    const name = sessionCookieName();
     const cookie = header(request.headers.cookie);
     const session = cookie
       .split(';')
@@ -61,6 +63,7 @@ export const onRequestError: Instrumentation.onRequestError = async (err, reques
         'content-type': 'application/json',
         'x-irca-client': 'portal',
         'x-forwarded-for': header(request.headers['x-forwarded-for']),
+        ...visitorHeaders(header(request.headers['x-forwarded-for']), process.env.FORWARDING_KEY),
       },
       body: JSON.stringify({
         source: 'server',

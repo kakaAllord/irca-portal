@@ -29,6 +29,8 @@ async function positionIdOf(request: APIRequestContext, name: string) {
   return list.find((p) => p.name === name)!.id;
 }
 
+const REPLY_KEY = 'journey-reply-key-0123456789abcdef0123456789';
+
 /**
  * A department's leader sends their department a message, end to end
  * (07 step 7.15): the words passed by Communications and approved by an
@@ -54,12 +56,14 @@ test('a leader messages their department, and a STOP is honoured on the next sen
     [leaderPerson, `Rehema Leader ${stamp}`, `71${stamp}9`, `leader${stamp}@example.com`],
   );
   // Both filled in the registration form, as every department member has.
+  // Already caught up by the API's sync job (D49), as a real member's form
+  // would be; otherwise it would copy the form's empty answers over them.
   const members = [randomUUID(), randomUUID()];
   for (const [i, id] of members.entries()) {
     const registration = randomUUID();
     await db.query(
-      `insert into registrations (id, token, status, submitted_at, updated_at)
-       values ($1, $2, 'submitted', now(), now())`,
+      `insert into registrations (id, token, status, submitted_at, updated_at, synced_at, handled_at)
+       values ($1, $2, 'submitted', now(), now(), now(), now())`,
       [registration, registration.replace(/-/g, '')],
     );
     await db.query(
@@ -71,6 +75,12 @@ test('a leader messages their department, and a STOP is honoured on the next sen
   await db.query(
     `insert into settings (key, value, updated_at) values ('comms.dailyCap', '"100000"', now()), ('comms.pricePerSegment', '"30"', now())
      on conflict (key) do update set value = excluded.value`,
+  );
+  // The password in Beem's reply link, as Dev → Settings would have made it.
+  await db.query(
+    `insert into settings (key, value, updated_at) values ('comms.replyKey', $1, now())
+     on conflict (key) do update set value = excluded.value`,
+    [JSON.stringify(REPLY_KEY)],
   );
   await db.end();
 
@@ -178,17 +188,14 @@ test('a leader messages their department, and a STOP is honoured on the next sen
     .toBe(3);
 
   // One singer replies STOP, as Beem would pass it on.
-  const stop = await request.post(
-    `${API}/public/comms/inbound?key=${process.env.BEEM_INBOUND_SECRET}`,
-    {
-      data: {
-        from: `255${phones[0]}`,
-        to: '255700000000',
-        transaction_id: stamp,
-        message: { text: 'STOP' },
-      },
+  const stop = await request.post(`${API}/public/comms/inbound?key=${REPLY_KEY}`, {
+    data: {
+      from: `255${phones[0]}`,
+      to: '255700000000',
+      transaction_id: stamp,
+      message: { text: 'STOP' },
     },
-  );
+  });
   expect(stop.status()).toBe(200);
 
   // The next message leaves them alone, and says so before anything is sent.

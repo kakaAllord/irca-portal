@@ -1,11 +1,19 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { NO_REFERRER, carriesToken, contentSecurityPolicy } from '@/shared';
+import {
+  FORWARDING_KEY_HEADER,
+  NO_REFERRER,
+  VISITOR_HEADER,
+  carriesToken,
+  contentSecurityPolicy,
+  visitorHeaders,
+} from '@/shared';
+import { sessionCookieName } from '@/lib/auth/session-cookie';
 
 /** Pages anyone may open. Everything else needs to be signed in. */
 const PUBLIC = ['/login', '/forgot-password', '/reset-password', '/accept-invite'];
 
 /**
- * Runs before every page. Two jobs:
+ * Runs before every page, and before every call to the API. For a page:
  *
  * 1. Someone with no session cookie at all is sent straight to sign-in, with
  *    the page they wanted remembered. This only saves a round trip for the
@@ -21,7 +29,8 @@ const PUBLIC = ['/login', '/forgot-password', '/reset-password', '/accept-invite
  */
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-  const cookieName = process.env.SESSION_COOKIE_NAME ?? 'irca_session';
+  if (pathname.startsWith('/api/')) return toApi(request);
+  const cookieName = sessionCookieName();
   const isPublic = PUBLIC.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   if (!isPublic && !request.cookies.has(cookieName)) {
@@ -49,7 +58,28 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
+/**
+ * A call on its way through the rewrite to the API. When the portal runs on
+ * another host than the API, it says who the visitor is, so the API's
+ * per-address limits do not count everyone as Vercel (D48). Whatever the
+ * browser itself sent under those names is dropped first.
+ */
+function toApi(request: NextRequest) {
+  const headers = new Headers(request.headers);
+  headers.delete(VISITOR_HEADER);
+  headers.delete(FORWARDING_KEY_HEADER);
+  const visitor = visitorHeaders(
+    request.headers.get('x-forwarded-for'),
+    process.env.FORWARDING_KEY,
+  );
+  for (const [name, value] of Object.entries(visitor)) headers.set(name, value);
+  return NextResponse.next({ request: { headers } });
+}
+
 export const config = {
-  // Not the API rewrite, Next's own files, or static assets.
-  matcher: ['/((?!api/|_next/|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico|txt)$).*)'],
+  // Every API call, and every page: not Next's own files or static assets.
+  matcher: [
+    '/api/:path*',
+    '/((?!api/|_next/|favicon.ico|.*\\.(?:png|jpg|jpeg|svg|webp|ico|txt)$).*)',
+  ],
 };

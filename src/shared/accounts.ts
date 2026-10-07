@@ -4,7 +4,7 @@
  * to a department with a portal (D31), which needs no kind at all.
  *
  * A kind is a bundle of roles defined here, in code. An administrator gives
- * a person a kind in Admin → People; the developer kind only comes from the
+ * a person a kind in Admin → Users; the developer kind only comes from the
  * command line. What a user is follows from the roles they hold: nothing
  * about kinds is stored, so dividing the work differently later, as the
  * department leaders may ask, is a change here and not a migration.
@@ -14,7 +14,7 @@ export type AccountKindKey = 'pastor' | 'administrator' | 'developer';
 export type AccountKind = {
   key: AccountKindKey;
   label: string;
-  /** What it brings, in the words Admin → People shows. */
+  /** What it brings, in the words Admin → Users shows. */
   description: string;
   roles: readonly string[];
   /** Given only by `user:create-dev`, never in the portal. */

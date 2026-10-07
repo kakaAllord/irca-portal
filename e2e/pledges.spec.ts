@@ -6,7 +6,7 @@ import pg from 'pg';
 
 config({ path: `${BACKEND_DIR}/.env.test`, quiet: true });
 
-const CLERK = { email: 'clerk@irca.local', password: 'clerk-password-123' };
+const CLERK = { email: 'mhazini2@irca.local', password: 'manager-password-123' };
 const MANAGER = { email: 'mhazini@irca.local', password: 'manager-password-123' };
 const PASTOR = { email: 'pastor@irca.local', password: 'pastor-password-123' };
 
@@ -84,6 +84,7 @@ test('a pledge, promised and paid in part', async ({ browser }) => {
   await signIn(pastor, PASTOR);
   await pastor.goto(campaignUrl);
   await expect(pastor.getByText("You don't have access")).toBeVisible();
-  await pastor.goto(`/membership/people/${personId}`);
+  // The record keeps pledges on their own tab.
+  await pastor.goto(`/membership/people/${personId}?tab=pledges`);
   await expect(pastor.getByText(/150,000/).first()).toBeVisible();
 });

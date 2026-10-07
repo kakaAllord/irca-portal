@@ -2,26 +2,31 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Select } from '@/components/ui/Select';
+import { FilterFunnel } from '@/components/ui/FilterFunnel';
 import { MESSAGE_STATUS } from './types';
 
-/** Department and status, in the address bar so a filtered list can be shared. */
+/** Department and status behind the funnel, in the address bar so a filtered list can be shared. */
 export function HistoryFilters({ departments }: { departments: { id: string; name: string }[] }) {
   const router = useRouter();
   const params = useSearchParams();
-  function set(key: string, value: string) {
+  function set(changes: Record<string, string>) {
     const next = new URLSearchParams(params.toString());
-    if (value && value !== 'any') next.set(key, value);
-    else next.delete(key);
+    for (const [key, value] of Object.entries(changes)) {
+      if (value && value !== 'any') next.set(key, value);
+      else next.delete(key);
+    }
     next.delete('page');
     router.replace(`/comms/history${next.size ? `?${next}` : ''}`, { scroll: false });
   }
   return (
-    <div className="flex flex-wrap gap-2">
+    <FilterFunnel
+      on={['department', 'status'].filter((key) => params.get(key)).length}
+      onClear={() => set({ department: '', status: '' })}
+    >
       <Select
-        inline
         label="Department"
         value={params.get('department') ?? 'any'}
-        onChange={(e) => set('department', e.target.value)}
+        onChange={(e) => set({ department: e.target.value })}
         options={[
           { value: 'any', label: 'All' },
           { value: 'none', label: 'Communications' },
@@ -29,15 +34,14 @@ export function HistoryFilters({ departments }: { departments: { id: string; nam
         ]}
       />
       <Select
-        inline
         label="Status"
         value={params.get('status') ?? 'any'}
-        onChange={(e) => set('status', e.target.value)}
+        onChange={(e) => set({ status: e.target.value })}
         options={[
           { value: 'any', label: 'All' },
           ...Object.entries(MESSAGE_STATUS).map(([value, s]) => ({ value, label: s.label })),
         ]}
       />
-    </div>
+    </FilterFunnel>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import {
   formatMoney,
   type AccountsResponse,
@@ -12,7 +13,9 @@ import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
 import { RecordButtons } from '@/modules/finance/components/RecordButtons';
 import { Bars } from '@/modules/finance/components/Bars';
-import { entrySign, entryWhat } from '@/modules/finance/components/entry';
+import { BankCard } from '@/modules/finance/components/BankCard';
+import { EntryRow } from '@/modules/finance/components/EntryRow';
+import { cn } from '@/lib/cn';
 
 export const metadata: Metadata = { title: 'Finance' };
 
@@ -31,7 +34,13 @@ type Overview = {
   recent: FinanceTransaction[] | null;
 };
 
-/** Money in, money out and what is left, for one month at a time. */
+/**
+ * What each account holds today, as cards, then one month at a time: the net
+ * in large figures, where the money came from and went, twelve months side by
+ * side, and the latest entries. The month switcher sits with the month's
+ * figures, so changing it never seems to change the balances above it, which
+ * are always today's.
+ */
 export default async function FinanceOverview({
   searchParams,
 }: {
@@ -50,131 +59,136 @@ export default async function FinanceOverview({
       ? serverApi<AccountsResponse>('/finance/accounts')
       : Promise.resolve(null),
   ]);
-  const held = (accounts?.methods ?? [])
-    .flatMap((m) => m.accounts.map((a) => ({ ...a, method: m.name })))
-    .filter((a) => a.isActive);
+  const held = (accounts?.methods ?? []).flatMap((m) =>
+    m.accounts.filter((a) => a.isActive).map((account) => ({ account, method: m })),
+  );
   const currency = me.church?.currency ?? 'TZS';
+  const shown = monthName(data.month);
+  const net = Number(data.net);
 
   return (
     <>
       <PageHeader
         title="Finance"
         subtitle={`Income and expenses for ${me.church?.name ?? 'this church'}.`}
-        actions={
-          <>
-            <MonthSwitcher month={data.month} />
-            <RecordButtons timezone={me.church?.timezone ?? 'UTC'} />
-          </>
-        }
+        actions={<RecordButtons timezone={me.church?.timezone ?? 'UTC'} />}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile
-          label="Income"
-          value={formatMoney(data.income, currency)}
-          change={change(data.income, data.previous.income)}
-        />
-        <Tile
-          label="Expenses"
-          value={formatMoney(data.expense, currency)}
-          change={change(data.expense, data.previous.expense)}
-        />
-        <Tile label="Net" value={formatMoney(data.net, currency)} />
-        <Tile label="Entries" value={String(data.count)} />
-      </div>
-
-      {data.count === 0 && (
-        <div className="mt-4">
-          <EmptyState title="No entries yet">
-            Record your first income or expense for this month.
-          </EmptyState>
-        </div>
-      )}
-
       {held.length > 0 && (
-        <section className="mt-5" aria-labelledby="held-heading">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 id="held-heading" className="text-[13px] font-semibold text-fg">
-              What each account holds today
-            </h2>
-            <Link href="/finance/accounts" className="text-[12px] text-accent underline">
-              Accounts →
-            </Link>
-          </div>
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {held.map((account) => {
-              const negative = account.balance !== null && Number(account.balance) < 0;
-              return (
-                <li
-                  key={account.id}
-                  className={`rounded-[10px] border bg-surface px-3.5 py-2.5 ${negative ? 'border-danger-br' : 'border-border'}`}
-                >
-                  <p className="text-[11.5px] text-fg3">{account.method}</p>
-                  <p className="flex items-baseline justify-between gap-2">
-                    <span className="truncate text-[12.5px] font-medium text-fg">
-                      {account.name}
-                    </span>
-                    <span
-                      className={`text-[13.5px] font-semibold tabular-nums ${negative ? 'text-danger' : 'text-fg'}`}
-                    >
-                      {account.balance === null
-                        ? '—'
-                        : formatMoney(account.balance, account.currency)}
-                    </span>
-                  </p>
-                  {negative && (
-                    <p className="mt-0.5 text-[11px] text-danger">
-                      Check this account: it has paid out more than it had.
-                    </p>
-                  )}
-                </li>
-              );
-            })}
+        <section aria-labelledby="held-heading">
+          <Heading id="held-heading" link={{ href: '/finance/accounts', label: 'All accounts' }}>
+            What each account holds today
+          </Heading>
+          <ul className="flex snap-x gap-4 overflow-x-auto pb-2">
+            {held.map(({ account, method }) => (
+              <li key={account.id} className="w-[260px] flex-none snap-start">
+                <Link href="/finance/accounts" aria-label={`${account.name}, ${method.name}`}>
+                  <BankCard
+                    account={account}
+                    kind={method.kind}
+                    methodName={method.name}
+                    church={me.church?.code ?? 'Church'}
+                    showCurrency={accounts!.foreign}
+                    compact
+                  />
+                </Link>
+              </li>
+            ))}
           </ul>
         </section>
       )}
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
-        <section>
-          <h2 className="mb-2 text-[13px] font-semibold text-fg">Income by source</h2>
-          <Bars rows={data.bySource} currency={currency} />
-        </section>
-        <section>
-          <h2 className="mb-2 text-[13px] font-semibold text-fg">Top expenses this month</h2>
-          <Bars rows={data.topItems} currency={currency} />
-        </section>
+      <div
+        className={cn(
+          'mb-3 flex flex-wrap items-center justify-between gap-2',
+          held.length > 0 && 'mt-8',
+        )}
+      >
+        <h2 className="text-[14px] font-semibold text-fg">Money in and out</h2>
+        <MonthSwitcher month={data.month} />
       </div>
 
-      <section className="mt-5">
-        <h2 className="mb-2 text-[13px] font-semibold text-fg">Last 12 months</h2>
-        <Trend rows={data.trend} currency={currency} />
+      <section
+        aria-label={`${shown} in figures`}
+        className="grid gap-px overflow-hidden rounded-[18px] border border-border bg-border lg:grid-cols-[1.3fr_1fr_1fr]"
+      >
+        <div className="flex flex-col justify-center gap-1 bg-surface p-5">
+          <p className="text-[11px] font-semibold tracking-[0.14em] text-fg3 uppercase">
+            {net >= 0 ? 'Kept' : 'Short'} in {shown}
+          </p>
+          <p
+            className={cn(
+              'text-[32px] leading-tight font-semibold tabular-nums',
+              net >= 0 ? 'text-fg' : 'text-danger',
+            )}
+          >
+            {formatMoney(data.net, currency)}
+          </p>
+          <p className="text-[12px] text-fg3">
+            What came in less what went out, across {data.count}{' '}
+            {data.count === 1 ? 'entry' : 'entries'}.
+          </p>
+        </div>
+        <Flow
+          label="Came in"
+          value={formatMoney(data.income, currency)}
+          change={change(data.income, data.previous.income)}
+          good="up"
+          tone="in"
+        />
+        <Flow
+          label="Went out"
+          value={formatMoney(data.expense, currency)}
+          change={change(data.expense, data.previous.expense)}
+          good="down"
+          tone="out"
+        />
       </section>
 
+      {data.count === 0 && (
+        <div className="mt-4">
+          <EmptyState title="Nothing recorded yet">
+            Record the first income or expense for {shown}.
+          </EmptyState>
+        </div>
+      )}
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Panel title="Where it came from" sub={`Income by source, ${shown}`}>
+          <Bars rows={data.bySource} currency={currency} tone="in" />
+        </Panel>
+        <Panel title="Where it went" sub={`The largest expenses, ${shown}`}>
+          <Bars rows={data.topItems} currency={currency} tone="out" />
+        </Panel>
+      </div>
+
+      <div className="mt-4">
+        <Panel
+          title="The last twelve months"
+          sub="Income beside expenses, month by month"
+          aside={
+            <span className="flex items-center gap-3 text-[11.5px] text-fg3">
+              <span className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-[3px] bg-pos" /> In
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-[3px] bg-[#b4532a]" /> Out
+              </span>
+            </span>
+          }
+        >
+          <Trend rows={data.trend} currency={currency} current={data.month} />
+        </Panel>
+      </div>
+
       {data.recent && data.recent.length > 0 && (
-        <section className="mt-5">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-[13px] font-semibold text-fg">Recent entries</h2>
-            <Link href="/finance/transactions" className="text-[12px] text-accent underline">
-              See all →
-            </Link>
-          </div>
-          <ul className="flex flex-col divide-y divide-border2 rounded-[10px] border border-border">
+        <section className="mt-7">
+          <Heading link={{ href: '/finance/transactions', label: 'All transactions' }}>
+            Latest entries
+          </Heading>
+          <ul className="divide-y divide-border2 overflow-hidden rounded-[16px] border border-border bg-surface">
             {data.recent.map((entry) => (
-              <li key={entry.id} className="flex items-center gap-3 px-3 py-2 text-[12.5px]">
-                <Link
-                  href={`/finance/transactions/${entry.code}`}
-                  className="font-mono text-accent"
-                >
-                  {entry.code}
-                </Link>
-                <span className="truncate text-fg2">{entryWhat(entry)}</span>
-                <span
-                  className={`ml-auto tabular-nums ${entry.kind === 'INCOME' ? 'text-pos' : 'text-fg'}`}
-                >
-                  {entrySign(entry)}
-                  {formatMoney(entry.amount, entry.currency === currency ? '' : entry.currency)}
-                </span>
-              </li>
+              <EntryRow key={entry.id} entry={entry} currency={currency} showDate />
             ))}
           </ul>
         </section>
@@ -183,56 +197,173 @@ export default async function FinanceOverview({
   );
 }
 
-function Tile({ label, value, change }: { label: string; value: string; change?: string | null }) {
+function Heading({
+  id,
+  link,
+  children,
+}: {
+  id?: string;
+  link: { href: string; label: string };
+  children: ReactNode;
+}) {
   return (
-    <div className="rounded-[10px] border border-border bg-surface p-3.5">
-      <p className="text-[11px] font-semibold tracking-wide text-fg3 uppercase">{label}</p>
-      <p className="mt-1 text-[19px] font-semibold tabular-nums text-fg">{value}</p>
-      {change && <p className="mt-0.5 text-[11.5px] text-fg3">{change}</p>}
+    <div className="mb-3 flex items-center justify-between gap-2">
+      <h2 id={id} className="text-[14px] font-semibold text-fg">
+        {children}
+      </h2>
+      <Link href={link.href} className="text-[12px] font-medium text-accent hover:underline">
+        {link.label} →
+      </Link>
+    </div>
+  );
+}
+
+function Panel({
+  title,
+  sub,
+  aside,
+  children,
+}: {
+  title: string;
+  sub: string;
+  aside?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-[16px] border border-border bg-surface p-5">
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div>
+          <h2 className="text-[14px] font-semibold text-fg">{title}</h2>
+          <p className="text-[12px] text-fg3">{sub}</p>
+        </div>
+        {aside}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Money in or out for the month, and how it compares with the month before. */
+function Flow({
+  label,
+  value,
+  change,
+  good,
+  tone,
+}: {
+  label: string;
+  value: string;
+  change: number | null;
+  /** Which way is good news: more income, or fewer expenses. */
+  good: 'up' | 'down';
+  tone: 'in' | 'out';
+}) {
+  const better = change !== null && (good === 'up' ? change >= 0 : change <= 0);
+  return (
+    <div className="flex items-center gap-3 bg-surface p-5">
+      <span
+        aria-hidden="true"
+        className={cn(
+          'flex size-11 flex-none items-center justify-center rounded-full',
+          tone === 'in' ? 'bg-pos-bg text-pos' : 'bg-danger-bg text-danger',
+        )}
+      >
+        <svg viewBox="0 0 16 16" className="size-5" fill="none" stroke="currentColor">
+          <path
+            d={tone === 'in' ? 'M8 13V3M4 7l4-4 4 4' : 'M8 3v10M4 9l4 4 4-4'}
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      <span className="flex min-w-0 flex-col">
+        <span className="text-[11.5px] text-fg3">{label}</span>
+        <span className="text-[19px] leading-tight font-semibold tabular-nums text-fg">
+          {value}
+        </span>
+        {change !== null && (
+          <span
+            className={cn(
+              'mt-0.5 w-fit rounded-full px-1.5 text-[11px] font-medium tabular-nums',
+              better ? 'bg-pos-bg text-pos' : 'bg-danger-bg text-danger',
+            )}
+          >
+            {change >= 0 ? '▲' : '▼'} {Math.abs(change)}% on last month
+          </span>
+        )}
+      </span>
     </div>
   );
 }
 
 /** Left out entirely when last month was zero: there is no "+∞%". */
-function change(now: string, before: string): string | null {
+function change(now: string, before: string): number | null {
   const previous = Number(before);
   if (previous <= 0) return null;
-  const percent = Math.round(((Number(now) - previous) / previous) * 100);
-  return `${percent >= 0 ? '+' : ''}${percent}% vs last month`;
+  return Math.round(((Number(now) - previous) / previous) * 100);
 }
 
 function Trend({
   rows,
   currency,
+  current,
 }: {
   rows: { month: string; income: string; expense: string }[];
   currency: string;
+  current: string;
 }) {
   const highest = Math.max(1, ...rows.flatMap((r) => [Number(r.income), Number(r.expense)]));
   return (
-    <div className="relative flex items-end gap-2 overflow-x-auto rounded-[10px] border border-border bg-surface p-3.5">
-      {rows.map((row) => (
-        <div key={row.month} className="flex min-w-[42px] flex-1 flex-col items-center gap-1">
-          <div className="flex h-24 items-end gap-0.5" aria-hidden="true">
+    <div className="flex items-end gap-1 overflow-x-auto">
+      {rows.map((row) => {
+        const name = new Date(`${row.month}-01T00:00:00Z`).toLocaleDateString('en-GB', {
+          month: 'short',
+          timeZone: 'UTC',
+        });
+        const label = `${monthName(row.month)}: in ${formatMoney(row.income, currency)}, out ${formatMoney(row.expense, currency)}`;
+        return (
+          <Link
+            key={row.month}
+            href={`/finance?month=${row.month}`}
+            title={label}
+            aria-label={label}
+            className={cn(
+              'flex min-w-[44px] flex-1 flex-col items-center gap-1.5 rounded-[10px] px-1 pt-2 pb-1.5 hover:bg-hover',
+              row.month === current && 'bg-chip',
+            )}
+          >
+            <span className="flex h-32 items-end gap-1" aria-hidden="true">
+              <span
+                className="w-3 rounded-t-[4px] bg-pos"
+                style={{ height: `${Math.max((Number(row.income) / highest) * 100, 1)}%` }}
+              />
+              <span
+                className="w-3 rounded-t-[4px] bg-[#b4532a]"
+                style={{ height: `${Math.max((Number(row.expense) / highest) * 100, 1)}%` }}
+              />
+            </span>
             <span
-              className="w-2.5 rounded-t-[2px] bg-pos"
-              style={{ height: `${(Number(row.income) / highest) * 100}%` }}
-            />
-            <span
-              className="w-2.5 rounded-t-[2px] bg-neutral-bar"
-              style={{ height: `${(Number(row.expense) / highest) * 100}%` }}
-            />
-          </div>
-          <span className="text-[10.5px] text-fg3">{row.month.slice(5)}</span>
-          <span className="sr-only">
-            {row.month}: income {formatMoney(row.income, currency)}, expenses{' '}
-            {formatMoney(row.expense, currency)}
-          </span>
-        </div>
-      ))}
+              className={cn(
+                'text-[11px]',
+                row.month === current ? 'font-semibold text-fg' : 'text-fg3',
+              )}
+            >
+              {name}
+            </span>
+          </Link>
+        );
+      })}
     </div>
   );
 }
+
+const monthName = (month: string) =>
+  new Date(`${month}-01T00:00:00Z`).toLocaleDateString('en-GB', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
 
 /** The month we are in, as `YYYY-MM`. Months sort correctly as strings in this shape. */
 function thisMonth() {
@@ -254,20 +385,23 @@ function MonthSwitcher({ month }: { month: string }) {
   // because a transaction dated in the future is refused when it is recorded.
   const atToday = month >= thisMonth();
   return (
-    <span className="flex items-center gap-1 text-[12.5px] text-fg2">
-      <Link href={`/finance?month=${shift(-1)}`} aria-label="Previous month" className="px-1.5">
+    <span className="flex items-center gap-1 rounded-full border border-border bg-surface p-0.5 text-[12.5px]">
+      <Link href={`/finance?month=${shift(-1)}`} aria-label="Previous month" className={ARROW}>
         ‹
       </Link>
-      <span className="min-w-[110px] text-center font-medium text-fg">{shown}</span>
+      <span className="min-w-[116px] text-center font-medium text-fg">{shown}</span>
       {atToday ? (
-        <span aria-hidden className="px-1.5 text-border">
+        <span aria-hidden className={cn(ARROW, 'text-border hover:bg-transparent')}>
           ›
         </span>
       ) : (
-        <Link href={`/finance?month=${shift(1)}`} aria-label="Next month" className="px-1.5">
+        <Link href={`/finance?month=${shift(1)}`} aria-label="Next month" className={ARROW}>
           ›
         </Link>
       )}
     </span>
   );
 }
+
+const ARROW =
+  'flex size-8 items-center justify-center rounded-full text-fg2 hover:bg-hover hover:text-fg';

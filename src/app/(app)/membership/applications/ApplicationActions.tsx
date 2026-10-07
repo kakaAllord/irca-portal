@@ -1,9 +1,7 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
 import { clientApi } from '@/lib/api/client';
 import { ApiRequestError } from '@/lib/api/errors';
 import { Alert } from '@/components/ui/Alert';
@@ -12,14 +10,18 @@ import { Drawer } from '@/components/ui/Drawer';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SubmitButton } from '@/components/ui/SubmitButton';
+import { Spinner } from '@/components/ui/Spinner';
 import { Can } from '@/lib/session';
+import { cn } from '@/lib/cn';
 import type { PersonRow } from '@/modules/membership/types';
 import type { Application } from './page';
 
 /**
- * The one action each step has: approve, confirm once the probation is over,
- * or open the record. Not approving is kept one step away in a menu, and asks
- * for a reason, because it is written down and the person may ask why.
+ * What each step offers: a tick and a cross while waiting for approval, and
+ * Confirm once approved (whenever the pastors are ready, D54). Confirmed
+ * members are on the Members page. Rejecting
+ * asks for a reason first, because it is written down and the person may ask
+ * why.
  */
 export function ApplicationActions({ application: a }: { application: Application }) {
   const router = useRouter();
@@ -42,63 +44,40 @@ export function ApplicationActions({ application: a }: { application: Applicatio
     }
   }
 
-  if (a.status === 'CONFIRMED') {
-    return (
-      <Link
-        href={`/membership/people/${a.person.id}`}
-        className="inline-flex h-7 items-center rounded-[7px] border border-border px-2.5 text-[11.5px] font-medium text-fg hover:bg-hover"
-      >
-        Record
-      </Link>
-    );
-  }
-
   return (
     <Can permission="membership.applications.decide">
       {error && <Alert tone="error">{error}</Alert>}
       {a.status === 'UNDER_REVIEW' && (
-        <span className="flex items-center gap-1">
-          <Button size="sm" loading={busy} onClick={() => run('approve')}>
-            Approve
-          </Button>
-          <Menu>
-            <MenuButton
-              aria-label="More"
-              className="h-7 rounded-[7px] px-2 text-fg3 hover:bg-hover"
-            >
-              ⋯
-            </MenuButton>
-            <MenuItems
-              anchor="bottom end"
-              className="z-30 mt-1 w-44 rounded-[10px] border border-border bg-surface py-1 shadow-xl"
-            >
-              <MenuItem>
-                <button
-                  type="button"
-                  onClick={() => setRejecting(true)}
-                  className="w-full px-3 py-2 text-left text-[12.5px] text-fg data-focus:bg-hover"
-                >
-                  Do not approve…
-                </button>
-              </MenuItem>
-            </MenuItems>
-          </Menu>
+        <span className="flex items-center gap-1.5">
+          <RoundAction
+            label="Approve application"
+            tone="positive"
+            busy={busy}
+            onClick={() => run('approve')}
+          >
+            <path d="M4 10.5l3.5 3.5L16 6" />
+          </RoundAction>
+          <RoundAction
+            label="Reject application"
+            tone="danger"
+            align="end"
+            disabled={busy}
+            onClick={() => setRejecting(true)}
+          >
+            <path d="M5.5 5.5l9 9M14.5 5.5l-9 9" />
+          </RoundAction>
         </span>
       )}
       {a.status === 'APPROVED' && (
-        <span title={a.canConfirm ? undefined : `The probation month ends on ${a.availableOn}`}>
-          <Button size="sm" loading={busy} disabled={!a.canConfirm} onClick={() => run('confirm')}>
-            {a.canConfirm
-              ? 'Confirm'
-              : `From ${new Date(`${a.availableOn}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`}
-          </Button>
-        </span>
+        <Button size="sm" loading={busy} onClick={() => run('confirm')}>
+          Confirm
+        </Button>
       )}
 
       <Drawer
         open={rejecting}
         onClose={() => setRejecting(false)}
-        title={`Do not approve ${a.person.fullName}?`}
+        title={`Reject ${a.person.fullName}'s application?`}
         description="They go back to where they were before they applied. The reason is written down."
         footer={
           <>
@@ -111,7 +90,7 @@ export function ApplicationActions({ application: a }: { application: Applicatio
               missing={reason.trim().length < 3 ? ['Reason'] : []}
               onClick={() => run('reject', { reason })}
             >
-              Do not approve
+              Reject application
             </SubmitButton>
           </>
         }
@@ -125,6 +104,78 @@ export function ApplicationActions({ application: a }: { application: Applicatio
         />
       </Drawer>
     </Can>
+  );
+}
+
+/**
+ * A round icon button that names itself: the name is its accessible label,
+ * and shows above it on hover and on keyboard focus.
+ */
+function RoundAction({
+  label,
+  tone,
+  align = 'center',
+  busy = false,
+  disabled = false,
+  onClick,
+  children,
+}: {
+  label: string;
+  tone: 'positive' | 'danger';
+  /** Where the name sits: centred, or ending at the button's right edge. */
+  align?: 'center' | 'end';
+  busy?: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        aria-label={label}
+        aria-busy={busy || undefined}
+        disabled={disabled || busy}
+        onClick={onClick}
+        className={cn(
+          'flex size-8 items-center justify-center rounded-full border bg-surface transition-colors',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+          'disabled:cursor-not-allowed disabled:opacity-60',
+          tone === 'positive'
+            ? 'border-pos-br text-pos hover:border-pos hover:bg-pos-bg'
+            : 'border-danger-br text-danger hover:border-danger hover:bg-danger-bg',
+        )}
+      >
+        {busy ? (
+          <Spinner />
+        ) : (
+          <svg
+            viewBox="0 0 20 20"
+            className="size-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {children}
+          </svg>
+        )}
+      </button>
+      <span
+        role="tooltip"
+        className={cn(
+          'pointer-events-none invisible absolute bottom-full z-30 mb-1.5 whitespace-nowrap',
+          align === 'end' ? 'right-0' : 'left-1/2 -translate-x-1/2',
+          'rounded-[6px] bg-btn-bg px-2 py-1 text-[11px] font-medium text-btn-fg shadow-md',
+          'opacity-0 transition-opacity group-hover:visible group-hover:opacity-100',
+          'group-has-[:focus-visible]:visible group-has-[:focus-visible]:opacity-100',
+        )}
+      >
+        {label}
+      </span>
+    </span>
   );
 }
 

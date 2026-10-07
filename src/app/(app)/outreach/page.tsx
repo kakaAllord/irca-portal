@@ -11,20 +11,13 @@ import { churchToday, longDay, type Dashboard } from '@/modules/outreach/types';
 
 export const metadata: Metadata = { title: 'Outreach' };
 
-/** The order the leader reads them in: the doorstep, then what came of it, then the team. */
-const ORDER = [
-  'reached',
-  'spokenTo',
-  'salvations',
-  'awaiting',
-  'followups',
-  'visited',
-  'firstTime',
-  'sessions',
-  'areas',
-  'participation',
-  'training',
-];
+/**
+ * The four the owner kept (7 Oct 2026): who was reached, who was saved, who
+ * still waits for a call or visit, and who came to church. The API counts the
+ * rest too, and each still has its own list; the dashboard leaves them out so
+ * these four are read first.
+ */
+const ORDER = ['reached', 'salvations', 'awaiting', 'firstTime'];
 
 /**
  * The numbers the Outreach leader reports upward, for a week, a month or a
@@ -45,6 +38,8 @@ export default async function OutreachDashboard({
   );
   const data = await serverApi<Dashboard>(`/outreach/dashboard?${asked}`);
   const period = `from=${data.from}&to=${data.to}`;
+  // The chart follows the figures shown, so it has no line the page does not explain.
+  const shownTrends = data.trends.filter((t) => ORDER.includes(t.metric));
 
   return (
     <>
@@ -100,17 +95,17 @@ export default async function OutreachDashboard({
         </button>
       </form>
 
-      <ul className="grid grid-cols-2 gap-2.5 md:grid-cols-3 xl:grid-cols-5">
+      <ul className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         {ORDER.filter((key) => data.figures[key]).map((key) => {
           const f = data.figures[key]!;
           return (
             <li key={key}>
               <Link
                 href={`/outreach/figures/${key}?${period}`}
-                className="flex h-full flex-col gap-1 rounded-[10px] border border-border bg-surface p-3 hover:border-accent-br"
+                className="flex h-full flex-col gap-1.5 rounded-[14px] border border-border bg-surface p-4 hover:border-accent-br"
               >
-                <span className="text-[11.5px] text-fg2">{f.label}</span>
-                <span className="text-[22px] leading-tight font-semibold text-fg tabular-nums">
+                <span className="text-[12.5px] font-medium text-fg2">{f.label}</span>
+                <span className="text-[30px] leading-tight font-semibold text-fg tabular-nums">
                   {f.of === null
                     ? f.value.toLocaleString('en-GB')
                     : f.of
@@ -130,8 +125,8 @@ export default async function OutreachDashboard({
       <section className="mt-7 rounded-[10px] border border-border bg-surface p-4">
         <h2 className="mb-3 text-[13px] font-semibold text-fg">By week</h2>
         <LineChart
-          series={data.trends.map((t) => ({ metric: t.metric, points: t.points }))}
-          labels={Object.fromEntries(data.trends.map((t) => [t.metric, t.label]))}
+          series={shownTrends.map((t) => ({ metric: t.metric, points: t.points }))}
+          labels={Object.fromEntries(shownTrends.map((t) => [t.metric, t.label]))}
         />
       </section>
     </>

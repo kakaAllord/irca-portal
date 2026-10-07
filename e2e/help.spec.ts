@@ -2,8 +2,8 @@ import { expect, test } from '@playwright/test';
 
 test('anyone signed in can open the guides, whatever their role', async ({ page }) => {
   await page.goto('/login');
-  await page.getByLabel('Email').fill('clerk@irca.local');
-  await page.getByLabel('Password').fill('clerk-password-123');
+  await page.getByLabel('Email').fill('mhazini2@irca.local');
+  await page.getByLabel('Password').fill('manager-password-123');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByRole('navigation', { name: 'Portals' })).toBeVisible();
 

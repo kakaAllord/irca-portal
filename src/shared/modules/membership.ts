@@ -46,7 +46,7 @@ export const membershipModule = defineModule({
       label: 'Mark saved or baptised, move people between stages, and add people by hand',
     },
     'membership.people.export': { kind: 'read', label: 'Download the list of people as a PDF' },
-    'membership.notes.write': { kind: 'write', label: 'Add notes and log visits and calls' },
+    'membership.notes.write': { kind: 'write', label: 'Add notes' },
     'membership.applications.read': { kind: 'read', label: 'See membership applications' },
     'membership.applications.submit': {
       kind: 'write',
@@ -63,6 +63,11 @@ export const membershipModule = defineModule({
       label: 'Run foundation classes: groups, sign-ups and attendance',
     },
     'membership.insights.read': { kind: 'read', label: 'See insights' },
+    'membership.registrations.remind': {
+      kind: 'write',
+      label: 'Send people their link to finish the registration form',
+      hint: 'Copy it, or text it with an approved template, from Registrations and Members (D55).',
+    },
   },
   systemRoles: [
     {
@@ -83,6 +88,7 @@ export const membershipModule = defineModule({
         'membership.discipleship.read',
         'membership.discipleship.manage',
         'membership.insights.read',
+        'membership.registrations.remind',
       ],
     },
     {
@@ -102,6 +108,7 @@ export const membershipModule = defineModule({
         'membership.discipleship.read',
         'membership.discipleship.manage',
         'membership.insights.read',
+        'membership.registrations.remind',
       ],
     },
   ],
@@ -113,9 +120,17 @@ export const membershipModule = defineModule({
       permission: 'membership.dashboard.read',
     },
     {
-      label: 'Members',
+      // Everyone who ever registered, and everyone added by hand.
+      label: 'Registrations',
       href: '/membership/people',
       icon: 'people',
+      permission: 'membership.people.read',
+    },
+    {
+      // Only those the pastors have confirmed, with their member numbers.
+      label: 'Members',
+      href: '/membership/members',
+      icon: 'members',
       permission: 'membership.people.read',
     },
     {

@@ -147,7 +147,12 @@ export const financeModule = defineModule({
       icon: 'budgets',
       permission: 'finance.budgets.read',
     },
-    { label: 'Lists', href: '/finance/lists', icon: 'lists', permission: 'finance.catalog.read' },
+    {
+      label: 'Categories',
+      href: '/finance/lists',
+      icon: 'lists',
+      permission: 'finance.catalog.read',
+    },
     {
       label: 'Requests',
       href: '/finance/requests',

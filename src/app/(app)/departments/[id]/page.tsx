@@ -9,6 +9,7 @@ import { ApiRequestError } from '@/lib/api/errors';
 import { DepartmentSummary } from '@/modules/departments/DepartmentSummary';
 import { LeadersSection } from '@/modules/departments/LeadersSection';
 import { MembersSection } from '@/modules/departments/MembersSection';
+import { MyDepartmentsLink } from '@/modules/departments/MyDepartmentsLink';
 import type {
   DepartmentDetail,
   DepartmentSummary as Summary,
@@ -59,11 +60,7 @@ export default async function DepartmentPage({
 
   return (
     <>
-      {leads && (
-        <Link href="/departments" className="text-[12px] text-fg2 hover:text-fg">
-          ← My departments
-        </Link>
-      )}
+      {leads && <MyDepartmentsLink />}
       <div className={leads ? 'mt-2' : undefined}>
         <PageHeader
           title={department.name}

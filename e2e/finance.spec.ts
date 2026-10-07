@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const CLERK = { email: 'clerk@irca.local', password: 'clerk-password-123' };
+const CLERK = { email: 'mhazini2@irca.local', password: 'manager-password-123' };
 const MANAGER = { email: 'mhazini@irca.local', password: 'manager-password-123' };
 const ADMIN = { email: 'admin@irca.local', password: 'admin-password-123' };
 
@@ -158,7 +158,7 @@ test.describe('recording money', () => {
     // An account to move money into, from Finance → Accounts.
     await page.goto('/finance/accounts');
     await expect(async () => {
-      await page.getByRole('button', { name: '+ Account' }).click();
+      await page.getByRole('button', { name: '+ Add account' }).click();
       await expect(page.getByRole('dialog')).toContainText('Add an account', { timeout: 1_000 });
     }).toPass();
     await page.getByLabel('Payment method').selectOption({ label: 'Mobile money' });
@@ -167,6 +167,8 @@ test.describe('recording money', () => {
     await page.getByRole('button', { name: /Add account|Add it anyway/ }).click();
     const anyway = page.getByRole('button', { name: 'Add it anyway' });
     if (await anyway.isVisible().catch(() => false)) await anyway.click();
+    // The drawer's colour samples carry the name too, so wait for it to close.
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page.getByText(account)).toBeVisible();
 
     // A transfer: both balances move, neither income nor expense.
@@ -190,7 +192,7 @@ test.describe('recording money', () => {
     const why = page.getByLabel('Why it changes');
     if (await why.isVisible().catch(() => false)) await why.fill('The browser suite resets it');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(row.getByText(/TZS 1,000/)).toBeVisible();
+    await expect(row.getByText(/of TZS 1,000 used/)).toBeVisible();
 
     await page.goto('/finance/transactions/new?kind=expense');
     await createItem(page, 'Expense item', unique('Tracts'));
@@ -202,7 +204,7 @@ test.describe('recording money', () => {
 
     await page.goto('/finance/budgets');
     await expect(
-      page.locator('li', { hasText: 'Outreach' }).getByText('Over', { exact: true }),
+      page.locator('li', { hasText: 'Outreach' }).getByText('Over budget', { exact: true }),
     ).toBeVisible();
   });
 
