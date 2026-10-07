@@ -64,11 +64,13 @@ test('a GO day, from planning to the dashboard', async ({ browser, request }) =>
     name: `${name} ${stamp}`,
   }));
   // Each filled in the registration form, as every department member has.
+  // Already caught up by the API's sync job (D49), as a real member's form
+  // would be; otherwise it would copy the form's empty answers over them.
   for (const p of team) {
     const registration = randomUUID();
     await db.query(
-      `insert into registrations (id, token, status, submitted_at, updated_at)
-       values ($1, $2, 'submitted', now(), now())`,
+      `insert into registrations (id, token, status, submitted_at, updated_at, synced_at, handled_at)
+       values ($1, $2, 'submitted', now(), now(), now(), now())`,
       [registration, registration.replace(/-/g, '')],
     );
     await db.query(

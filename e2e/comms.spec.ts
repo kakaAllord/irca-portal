@@ -54,12 +54,14 @@ test('a leader messages their department, and a STOP is honoured on the next sen
     [leaderPerson, `Rehema Leader ${stamp}`, `71${stamp}9`, `leader${stamp}@example.com`],
   );
   // Both filled in the registration form, as every department member has.
+  // Already caught up by the API's sync job (D49), as a real member's form
+  // would be; otherwise it would copy the form's empty answers over them.
   const members = [randomUUID(), randomUUID()];
   for (const [i, id] of members.entries()) {
     const registration = randomUUID();
     await db.query(
-      `insert into registrations (id, token, status, submitted_at, updated_at)
-       values ($1, $2, 'submitted', now(), now())`,
+      `insert into registrations (id, token, status, submitted_at, updated_at, synced_at, handled_at)
+       values ($1, $2, 'submitted', now(), now(), now(), now())`,
       [registration, registration.replace(/-/g, '')],
     );
     await db.query(
