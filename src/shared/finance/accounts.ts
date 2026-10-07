@@ -48,6 +48,15 @@ export const UpdatePaymentMethodSchema = z
   .partial()
   .refine((v) => v.name !== undefined, 'Change something');
 
+/**
+ * The four colour templates an account's card may be drawn in, chosen when
+ * it is made and changeable after. An account without one is drawn in its
+ * payment method's own colours.
+ */
+export const CARD_STYLES = ['FOREST', 'SUNSET', 'OCEAN', 'ONYX'] as const;
+export const CardStyleSchema = z.enum(CARD_STYLES, 'Choose one of the four cards');
+export type CardStyle = z.infer<typeof CardStyleSchema>;
+
 export const CreateAccountSchema = z.object({
   methodId: z.uuid('Choose a payment method'),
   name: ListName,
@@ -56,12 +65,13 @@ export const CreateAccountSchema = z.object({
   openingBalance: BalanceSchema.optional(),
   openingDate: DateSchema,
   notes: z.string().trim().max(300).optional(),
+  cardStyle: CardStyleSchema.optional(),
   confirmDistinct: z.boolean().optional(),
 });
 export type CreateAccountInput = z.infer<typeof CreateAccountSchema>;
 
 /**
- * Name, number and notes change directly. Currency, opening balance and
+ * Name, number, notes and the card's colours change directly. Currency, opening balance and
  * opening date change directly only while the account has no entries; after
  * that they are a change request (D17).
  */
@@ -70,6 +80,7 @@ export const UpdateAccountSchema = z
     name: ListName,
     number: z.string().trim().max(60),
     notes: z.string().trim().max(300),
+    cardStyle: CardStyleSchema,
     currency: CurrencySchema,
     openingBalance: BalanceSchema,
     openingDate: DateSchema,
@@ -108,6 +119,8 @@ export type FinanceAccountView = {
   openingDate: string;
   isActive: boolean;
   notes: string;
+  /** Null: drawn in its method's own colours. */
+  cardStyle: CardStyle | null;
   /** In the account's own currency; null before its opening date. */
   balance: string | null;
   /** Entries of any status that use it. A used account cannot be deleted. */

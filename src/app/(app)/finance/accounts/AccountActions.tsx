@@ -3,7 +3,12 @@
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
-import { PAYMENT_METHODS, type FinanceAccountView, type PaymentMethod } from '@/shared';
+import {
+  PAYMENT_METHODS,
+  type CardStyle,
+  type FinanceAccountView,
+  type PaymentMethod,
+} from '@/shared';
 import { clientApi } from '@/lib/api/client';
 import { ApiRequestError } from '@/lib/api/errors';
 import { Alert } from '@/components/ui/Alert';
@@ -14,8 +19,10 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Can } from '@/lib/session';
+import { defaultCardStyle } from '@/modules/finance/components/BankCard';
+import { CardStylePicker } from '@/modules/finance/components/CardStylePicker';
 
-type Method = { id: string; name: string; isActive: boolean };
+type Method = { id: string; name: string; isActive: boolean; kind: PaymentMethod };
 type Candidate = { id: string; name: string };
 
 /**
@@ -248,14 +255,14 @@ export function NewAccountButton({
   methods,
   baseCurrency,
   methodId,
-  tile = false,
+  inline = false,
 }: {
   methods: Method[];
   baseCurrency: string;
   /** The method it starts under, when added from that method's row. */
   methodId?: string;
-  /** Drawn as an empty card beside the method's accounts. */
-  tile?: boolean;
+  /** A quiet link in that method's heading rather than the page's button. */
+  inline?: boolean;
 }) {
   const active = methods.filter((m) => m.isActive);
   const under = active.find((m) => m.id === methodId);
@@ -270,12 +277,16 @@ export function NewAccountButton({
   };
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState(blank);
+  // Until someone picks a colour, the card follows the method chosen.
+  const [cardStyle, setCardStyle] = useState<CardStyle | null>(null);
+  const style = cardStyle ?? defaultCardStyle(active.find((m) => m.id === values.methodId)?.kind);
   const { send, busy, error, fieldErrors, similar, reset } = useSend();
   const set = (key: keyof typeof blank, value: string) =>
     setValues((previous) => ({ ...previous, [key]: value }));
   const close = () => {
     setOpen(false);
     setValues(blank);
+    setCardStyle(null);
     reset();
   };
 
@@ -283,16 +294,13 @@ export function NewAccountButton({
 
   return (
     <Can permission="finance.accounts.manage">
-      {tile ? (
+      {inline ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex h-16 w-full items-center justify-center gap-3 rounded-[18px] sm:aspect-[1.586] sm:h-auto sm:flex-col sm:gap-2 border-2 border-dashed border-border text-fg3 transition-colors hover:border-accent-br hover:bg-hover hover:text-fg"
+          className="rounded-full px-2.5 py-1 text-[12px] font-medium text-accent hover:bg-hover"
         >
-          <span className="flex size-10 items-center justify-center rounded-full bg-chip text-[20px] leading-none">
-            +
-          </span>
-          <span className="text-[12.5px] font-medium">Add a {under?.name ?? ''} account</span>
+          + Add a {under?.name ?? ''} account
         </button>
       ) : (
         <Button onClick={() => setOpen(true)}>+ Add account</Button>
@@ -318,6 +326,7 @@ export function NewAccountButton({
               onClick={async () => {
                 const ok = await send('/finance/accounts', 'POST', {
                   ...values,
+                  cardStyle: style,
                   number: values.number || undefined,
                   notes: values.notes || undefined,
                   confirmDistinct: Boolean(similar),
@@ -348,6 +357,7 @@ export function NewAccountButton({
             error={fieldErrors.name?.[0]}
             onChange={(e) => set('name', e.target.value)}
           />
+          <CardStylePicker value={style} onChange={setCardStyle} name={values.name} />
           <Input
             label="Currency"
             required
@@ -424,10 +434,13 @@ function OpeningFields({
 
 export function AccountActions({
   account,
+  kind,
   methodActive,
   onCard = false,
 }: {
   account: FinanceAccountView;
+  /** Its method's kind, whose colours it wears until a template is chosen. */
+  kind: PaymentMethod;
   methodActive: boolean;
   /** Drawn on the face of an account's card, in its colours. */
   onCard?: boolean;
@@ -437,6 +450,7 @@ export function AccountActions({
     name: account.name,
     number: account.number ?? '',
     notes: account.notes,
+    cardStyle: account.cardStyle ?? defaultCardStyle(kind),
     currency: account.currency,
     openingBalance: account.openingBalance,
     openingDate: account.openingDate,
@@ -461,7 +475,7 @@ export function AccountActions({
     Object.entries(values).filter(
       ([key, value]) =>
         value !== edit[key as keyof typeof edit] &&
-        (!used || ['name', 'number', 'notes'].includes(key)),
+        (!used || ['name', 'number', 'notes', 'cardStyle'].includes(key)),
     ),
   );
   const asked = Object.fromEntries(
@@ -473,7 +487,7 @@ export function AccountActions({
   return (
     <Can permission="finance.accounts.manage">
       <ActionsMenu label={`Manage ${account.name}`} onCard={onCard}>
-        <Item onClick={() => setOpen('edit')} hint="Name, number and notes">
+        <Item onClick={() => setOpen('edit')} hint="Name, number, colour and notes">
           Edit details
         </Item>
         {used && !account.openRequest && (
@@ -548,6 +562,11 @@ export function AccountActions({
             required
             value={values.name}
             onChange={(e) => set('name', e.target.value)}
+          />
+          <CardStylePicker
+            value={values.cardStyle as CardStyle}
+            onChange={(v) => set('cardStyle', v)}
+            name={values.name}
           />
           <Input
             label="Account or till number"

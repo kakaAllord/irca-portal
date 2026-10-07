@@ -52,7 +52,12 @@ export default async function AccountsPage() {
         .map((a) => a.currency),
     ),
   ].sort();
-  const methods = data.methods.map((m) => ({ id: m.id, name: m.name, isActive: m.isActive }));
+  const methods = data.methods.map((m) => ({
+    id: m.id,
+    name: m.name,
+    isActive: m.isActive,
+    kind: m.kind,
+  }));
   const base = data.baseCurrency;
   const church = me.church?.code ?? 'Church';
 
@@ -65,7 +70,6 @@ export default async function AccountsPage() {
     return rate ? Number(a.balance) * Number(rate.rate) : 0;
   };
   const using = data.methods.filter((m) => m.accounts.length > 0);
-  const empty = data.methods.filter((m) => m.accounts.length === 0);
   const byMethod = using
     .map((m) => ({
       method: m,
@@ -190,8 +194,8 @@ export default async function AccountsPage() {
               ))}
               {noRate.map((c) => (
                 <Attention key={c} tone="warn">
-                  No exchange rate for {c} yet, so its accounts are left out of the total. Set one
-                  under{' '}
+                  No exchange rate for {c} yet, so its accounts are left out of the total. The first
+                  entry into one asks for it, or set it now under{' '}
                   <a href="#rates" className="font-medium underline">
                     Exchange rates
                   </a>
@@ -220,7 +224,15 @@ export default async function AccountsPage() {
                     {method.accounts.length} {method.accounts.length === 1 ? 'account' : 'accounts'}
                   </span>
                   {!method.isActive && <Badge tone="muted">Not in use</Badge>}
-                  <span className="ml-auto">
+                  <span className="ml-auto flex items-center gap-1">
+                    {method.isActive && (
+                      <NewAccountButton
+                        methods={methods}
+                        baseCurrency={base}
+                        methodId={method.id}
+                        inline
+                      />
+                    )}
                     <MethodActions method={method} />
                   </span>
                 </header>
@@ -234,7 +246,12 @@ export default async function AccountsPage() {
                         church={church}
                         showCurrency={data.foreign}
                         actions={
-                          <AccountActions account={account} methodActive={method.isActive} onCard />
+                          <AccountActions
+                            account={account}
+                            kind={method.kind}
+                            methodActive={method.isActive}
+                            onCard
+                          />
                         }
                       />
                       <p className="px-1 text-[11.5px] text-fg3">
@@ -247,49 +264,10 @@ export default async function AccountsPage() {
                       </p>
                     </li>
                   ))}
-                  {method.isActive && (
-                    <li>
-                      <NewAccountButton
-                        methods={methods}
-                        baseCurrency={base}
-                        methodId={method.id}
-                        tile
-                      />
-                    </li>
-                  )}
                 </ul>
               </section>
             ))}
           </div>
-
-          {empty.length > 0 && (
-            <section
-              aria-label="Methods without an account"
-              className="mt-8 rounded-[14px] border border-dashed border-border p-4"
-            >
-              <p className="mb-2 text-[12.5px] text-fg2">
-                Also set up, with no account yet. Add an account to one to start recording with it.
-              </p>
-              <ul className="flex flex-wrap gap-2">
-                {empty.map((m) => (
-                  <li
-                    key={m.id}
-                    className="flex items-center gap-2 rounded-full border border-border bg-surface py-1 pr-1 pl-3"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="size-2 rounded-full"
-                      style={{ background: SWATCH[m.kind] }}
-                    />
-                    <span className={`text-[12.5px] ${m.isActive ? 'text-fg' : 'text-fg3'}`}>
-                      {m.name}
-                    </span>
-                    <MethodActions method={m} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
         </>
       )}
 
@@ -327,7 +305,7 @@ export default async function AccountsPage() {
                     <span className="text-[11.5px] text-fg3">
                       {current
                         ? `for 1 ${currency}, since ${when(current.effectiveFrom)}`
-                        : 'Set one before recording.'}
+                        : 'The first entry asks for it, or set it here.'}
                     </span>
                   </span>
                 </div>

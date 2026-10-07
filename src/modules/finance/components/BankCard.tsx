@@ -1,14 +1,17 @@
 import Image from 'next/image';
 import type { ReactNode } from 'react';
-import { formatMoney, type FinanceAccountView, type PaymentMethod } from '@/shared';
+import { formatMoney, type CardStyle, type FinanceAccountView, type PaymentMethod } from '@/shared';
 import mark from '../../../../public/logo/irca-dark.webp';
 
 /**
  * Each kind of method in its own colours, so the cards read at a glance:
  * cash in banknote green, mobile money in sunset orange, a bank in deep
- * navy, a cheque in ink, a card in black and gold.
+ * navy, a cheque in ink, a card in black and gold. An account that chose one
+ * of the four templates below wears that instead.
  */
-const FACE: Record<PaymentMethod, { from: string; via: string; to: string; glow: string }> = {
+type Face = { from: string; via: string; to: string; glow: string };
+
+const FACE: Record<PaymentMethod, Face> = {
   CASH: { from: '#0f3d2e', via: '#17644a', to: '#0c2a22', glow: '#5fd3a0' },
   MOBILE_MONEY: { from: '#7a1f12', via: '#d2552a', to: '#5b1530', glow: '#ffb36b' },
   BANK_TRANSFER: { from: '#0b1736', via: '#1f3f7a', to: '#091027', glow: '#7fb2ff' },
@@ -16,6 +19,29 @@ const FACE: Record<PaymentMethod, { from: string; via: string; to: string; glow:
   CARD: { from: '#111111', via: '#2a2419', to: '#0a0a0a', glow: '#e5b65c' },
   OTHER: { from: '#2d1b4e', via: '#55358f', to: '#1a1030', glow: '#c3a6ff' },
 };
+
+/**
+ * The four templates an account may choose (Finance → Accounts → Add
+ * account), named for what they look like.
+ */
+export const CARD_STYLE: Record<CardStyle, Face & { name: string }> = {
+  FOREST: { name: 'Forest', ...FACE.CASH },
+  SUNSET: { name: 'Sunset', ...FACE.MOBILE_MONEY },
+  OCEAN: { name: 'Ocean', ...FACE.BANK_TRANSFER },
+  ONYX: { name: 'Onyx', ...FACE.CARD },
+};
+
+/** The template a new account starts on: the one its method's cards wear. */
+export function defaultCardStyle(kind: PaymentMethod | undefined): CardStyle {
+  if (kind === 'CASH') return 'FOREST';
+  if (kind === 'MOBILE_MONEY') return 'SUNSET';
+  if (kind === 'BANK_TRANSFER') return 'OCEAN';
+  return 'ONYX';
+}
+
+/** A card face's background: a glow in one corner over a three-stop gradient. */
+export const faceBackground = (face: Face) =>
+  `radial-gradient(120% 90% at 100% 0%, ${face.glow}55 0%, transparent 55%), linear-gradient(135deg, ${face.from} 0%, ${face.via} 55%, ${face.to} 100%)`;
 
 /** "0754123456" as "0754 1234 56", the way a card prints its number. */
 const grouped = (n: string) =>
@@ -49,7 +75,8 @@ export function BankCard({
   /** Smaller, for a row of cards: no number, and a smaller balance. */
   compact?: boolean;
 }) {
-  const face = FACE[kind] ?? FACE.OTHER;
+  // A chosen template wins; an account without one wears its method's colours.
+  const face = account.cardStyle ? CARD_STYLE[account.cardStyle] : (FACE[kind] ?? FACE.OTHER);
   const negative = account.balance !== null && Number(account.balance) < 0;
   const off = !account.isActive;
 
@@ -58,7 +85,7 @@ export function BankCard({
       <div
         className={`relative isolate flex aspect-[1.586] w-full flex-col justify-between overflow-hidden rounded-[18px] text-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.55)] ring-1 ring-black/10 transition-transform duration-300 group-hover:-translate-y-0.5 ${compact ? 'p-4' : 'p-5'} ${off ? 'opacity-60 grayscale' : ''}`}
         style={{
-          backgroundImage: `radial-gradient(120% 90% at 100% 0%, ${face.glow}55 0%, transparent 55%), linear-gradient(135deg, ${face.from} 0%, ${face.via} 55%, ${face.to} 100%)`,
+          backgroundImage: faceBackground(face),
         }}
       >
         <Guilloche />
