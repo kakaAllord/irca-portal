@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
 import { can } from '@/lib/auth/guards';
@@ -9,12 +10,16 @@ import type { MyDepartment } from '@/modules/departments/types';
 
 export const metadata: Metadata = { title: 'My departments' };
 
-/** The departments this person leads (D28). */
+/**
+ * The departments this person leads (D28). Someone leading only one, as most
+ * leaders do, goes straight to it: a list of one is a step for nothing.
+ */
 export default async function MyDepartmentsPage() {
   const me = await serverApi<MeResponse>('/auth/me');
   if (!can(me, 'departments.own.read')) return <ForbiddenState what="departments" />;
 
   const mine = await serverApi<MyDepartment[]>('/departments/mine');
+  if (mine.length === 1) redirect(`/departments/${mine[0]!.id}`);
 
   return (
     <>
