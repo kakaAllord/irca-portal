@@ -40,9 +40,12 @@ export default async function HistoryPage({
   };
   return (
     <>
-      <PageHeader title="History" subtitle="Every message the church sent, newest first." />
-      <HistoryFilters departments={departments.departments} />
-      <div className="mt-4">
+      <PageHeader
+        title="History"
+        subtitle="Every message the church sent, newest first."
+        actions={<HistoryFilters departments={departments.departments} />}
+      />
+      <div>
         <HistoryTable rows={history.rows} base="/comms/history" showDepartment />
       </div>
       {pages > 1 && (

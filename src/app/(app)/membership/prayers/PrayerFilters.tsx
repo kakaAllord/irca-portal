@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLiveSearch } from '@/lib/useLiveSearch';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import { FilterFunnel } from '@/components/ui/FilterFunnel';
 
 const PATH = '/membership/prayers';
 
@@ -18,16 +19,25 @@ function recentMonths(today = new Date()): { value: string; label: string }[] {
   });
 }
 
-/** A name, and a month. Both live in the URL, as every filter in the portal does. */
+/**
+ * A name, and a month behind the funnel. Both live in the URL, as every filter
+ * in the portal does.
+ */
 export function PrayerFilters() {
   const router = useRouter();
   const params = useSearchParams();
   const [q, setQ] = useLiveSearch(PATH);
   const month = params.get('month') ?? '';
+  const pick = (value: string) => {
+    const next = new URLSearchParams(params.toString());
+    if (value) next.set('month', value);
+    else next.delete('month');
+    router.replace(`${PATH}${next.size ? `?${next}` : ''}`, { scroll: false });
+  };
 
   return (
-    <div className="flex flex-wrap items-end gap-3">
-      <div className="min-w-[200px] flex-1">
+    <div className="flex items-end gap-2">
+      <div className="min-w-0 flex-1">
         <Input
           label="Search"
           placeholder="Search by name…"
@@ -35,17 +45,14 @@ export function PrayerFilters() {
           onChange={(e) => setQ(e.target.value)}
         />
       </div>
-      <Select
-        label="Month"
-        value={month}
-        onChange={(e) => {
-          const next = new URLSearchParams(params.toString());
-          if (e.target.value) next.set('month', e.target.value);
-          else next.delete('month');
-          router.replace(`${PATH}${next.size ? `?${next}` : ''}`, { scroll: false });
-        }}
-        options={[{ value: '', label: 'Any month' }, ...recentMonths()]}
-      />
+      <FilterFunnel on={month ? 1 : 0} onClear={() => pick('')}>
+        <Select
+          label="Month"
+          value={month}
+          onChange={(e) => pick(e.target.value)}
+          options={[{ value: '', label: 'Any month' }, ...recentMonths()]}
+        />
+      </FilterFunnel>
     </div>
   );
 }

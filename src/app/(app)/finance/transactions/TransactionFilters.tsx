@@ -4,11 +4,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLiveSearch } from '@/lib/useLiveSearch';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Button } from '@/components/ui/Button';
+import { FilterFunnel } from '@/components/ui/FilterFunnel';
 
 type Option = { id: string; name: string };
 
-/** Filters live in the URL, so a filtered list can be sent to someone as a link. */
+/**
+ * The kind and the search stay in sight; category, account, dates and voided
+ * entries fold behind the funnel. Filters live in the URL, so a filtered list
+ * can be sent to someone as a link.
+ */
 export function TransactionFilters({
   sources,
   items,
@@ -33,7 +37,10 @@ export function TransactionFilters({
   };
 
   const kind = params.get('kind') ?? 'any';
-  const filtered = [...params.keys()].some((key) => key !== 'page');
+  const FOLDED = ['incomeSourceId', 'expenseItemId', 'accountId', 'from', 'to', 'status'];
+  const on = new Set(
+    FOLDED.filter((key) => params.get(key)).map((key) => (key === 'to' ? 'from' : key)),
+  ).size;
 
   const KINDS = [
     ['any', 'All'],
@@ -75,66 +82,58 @@ export function TransactionFilters({
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-      </div>
-      <div className="flex flex-wrap items-end gap-2">
-        <Select
-          inline
-          label="Category"
-          value={params.get('incomeSourceId') ?? params.get('expenseItemId') ?? 'any'}
-          onChange={(e) => {
-            const id = e.target.value === 'any' ? '' : e.target.value;
-            const isSource = sources.some((s) => s.id === id);
-            set({ incomeSourceId: isSource ? id : '', expenseItemId: isSource ? '' : id });
-          }}
-          options={[
-            { value: 'any', label: 'any' },
-            ...sources.map((s) => ({ value: s.id, label: `Income: ${s.name}` })),
-            ...items.map((i) => ({ value: i.id, label: `Expense: ${i.name}` })),
-          ]}
-        />
-        {accounts.length > 0 && (
+        <FilterFunnel
+          on={on}
+          onClear={() => set(Object.fromEntries(FOLDED.map((key) => [key, ''])))}
+        >
           <Select
-            inline
-            label="Account"
-            className="max-w-[calc(100vw-2rem)]"
-            value={params.get('accountId') ?? 'any'}
-            onChange={(e) => set({ accountId: e.target.value === 'any' ? '' : e.target.value })}
+            label="Category"
+            value={params.get('incomeSourceId') ?? params.get('expenseItemId') ?? 'any'}
+            onChange={(e) => {
+              const id = e.target.value === 'any' ? '' : e.target.value;
+              const isSource = sources.some((s) => s.id === id);
+              set({ incomeSourceId: isSource ? id : '', expenseItemId: isSource ? '' : id });
+            }}
             options={[
-              { value: 'any', label: 'any' },
-              ...accounts.map((a) => ({ value: a.id, label: `${a.method}: ${a.name}` })),
+              { value: 'any', label: 'Any' },
+              ...sources.map((s) => ({ value: s.id, label: `Income: ${s.name}` })),
+              ...items.map((i) => ({ value: i.id, label: `Expense: ${i.name}` })),
             ]}
           />
-        )}
-        <span className="flex items-center gap-1.5 text-[12px] text-fg3">
-          <Input
-            label="From"
-            hideLabel
-            type="date"
-            value={params.get('from') ?? ''}
-            onChange={(e) => set({ from: e.target.value })}
-          />
-          to
-          <Input
-            label="To"
-            hideLabel
-            type="date"
-            value={params.get('to') ?? ''}
-            onChange={(e) => set({ to: e.target.value })}
-          />
-        </span>
-        <label className="flex h-9 items-center gap-1.5 text-[12px] text-fg2">
-          <input
-            type="checkbox"
-            checked={params.get('status') === 'all'}
-            onChange={(e) => set({ status: e.target.checked ? 'all' : '' })}
-          />
-          Show voided
-        </label>
-        {filtered && (
-          <Button variant="ghost" size="sm" onClick={() => router.replace('/finance/transactions')}>
-            Clear filters
-          </Button>
-        )}
+          {accounts.length > 0 && (
+            <Select
+              label="Account"
+              value={params.get('accountId') ?? 'any'}
+              onChange={(e) => set({ accountId: e.target.value === 'any' ? '' : e.target.value })}
+              options={[
+                { value: 'any', label: 'Any' },
+                ...accounts.map((a) => ({ value: a.id, label: `${a.method}: ${a.name}` })),
+              ]}
+            />
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              label="From"
+              type="date"
+              value={params.get('from') ?? ''}
+              onChange={(e) => set({ from: e.target.value })}
+            />
+            <Input
+              label="To"
+              type="date"
+              value={params.get('to') ?? ''}
+              onChange={(e) => set({ to: e.target.value })}
+            />
+          </div>
+          <label className="flex items-center gap-1.5 text-[12px] text-fg2">
+            <input
+              type="checkbox"
+              checked={params.get('status') === 'all'}
+              onChange={(e) => set({ status: e.target.checked ? 'all' : '' })}
+            />
+            Show voided
+          </label>
+        </FilterFunnel>
       </div>
     </div>
   );
