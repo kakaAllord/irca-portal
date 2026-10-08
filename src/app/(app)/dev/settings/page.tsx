@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { unstable_rethrow } from 'next/navigation';
+import { Alert } from '@/components/ui/Alert';
 import { serverApi } from '@/lib/api/server';
 import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
@@ -11,7 +13,7 @@ import type {
   MessagingSettings,
 } from '@/modules/dev/types';
 import { ChurchSettings } from './ChurchSettings';
-import { EmailCard, LogLevelCard, TextsCard } from './Messaging';
+import { Card, EmailCard, LogLevelCard, TextsCard } from './Messaging';
 import { Alerts } from './Alerts';
 import { DriveCard } from './DriveCard';
 
@@ -34,13 +36,18 @@ export default async function SettingsPage({
   const [church, messaging, drive, alerts, query] = await Promise.all([
     serverApi<Settings>('/dev/church'),
     serverApi<MessagingSettings>('/dev/messaging'),
-    serverApi<DriveSettings>('/dev/files/drive'),
+    // Optional: the portal may be deployed before an API that has it, and
+    // the rest of Settings must still open.
+    serverApi<DriveSettings>('/dev/files/drive').catch((err: unknown) => {
+      unstable_rethrow(err);
+      return null;
+    }),
     serverApi<AlertsSettings>('/dev/alerts'),
     searchParams,
   ]);
   const outcome =
     query.drive === 'connected'
-      ? { tone: 'info' as const, text: `Connected. Files now go to ${drive.account}.` }
+      ? { tone: 'info' as const, text: `Connected. Files now go to ${drive?.account}.` }
       : query.drive === 'failed'
         ? { tone: 'error' as const, text: query.why ?? 'Google did not connect.' }
         : null;
@@ -58,7 +65,16 @@ export default async function SettingsPage({
         <ChurchSettings church={church} />
         <EmailCard email={messaging.email} />
         <TextsCard beem={messaging.beem} replyUrl={replyUrl} />
-        <DriveCard drive={drive} outcome={outcome} />
+        {drive ? (
+          <DriveCard drive={drive} outcome={outcome} />
+        ) : (
+          <Card title="Google Drive" intro="Where uploaded files are kept.">
+            <Alert tone="warn">
+              The API did not answer for Google Drive. If it was just deployed, the backend may not
+              have this yet; everything else here works.
+            </Alert>
+          </Card>
+        )}
         <Alerts alerts={alerts} />
         <LogLevelCard log={messaging.log} />
       </div>
