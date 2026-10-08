@@ -14,7 +14,7 @@ import type { MessagingSettings } from '@/modules/dev/types';
 
 type Note = { tone: 'info' | 'error'; text: string } | null;
 
-function Card({
+export function Card({
   title,
   intro,
   children,
@@ -32,7 +32,7 @@ function Card({
   );
 }
 
-const NO_KEY =
+export const NO_KEY =
   'The server cannot keep a password safely yet: whoever runs it must set SETTINGS_KEY in its .env. Until then everything is only written to its log.';
 
 /**

@@ -181,6 +181,25 @@ test.describe('the dev console', () => {
     });
     await expect(texts.getByText(/\/v1\/public\/comms\/inbound\?key=\S{24,}/)).toBeVisible();
 
+    // Google Drive (D58): the client saved, its secret never shown again, the
+    // address to give Google, and an answer Google did not send refused.
+    const drive = page.locator('section', {
+      has: page.getByRole('heading', { name: 'Google Drive' }),
+    });
+    await expect(drive.getByText(/Not set up: uploads are refused/)).toBeVisible();
+    await expect(drive.getByText(/\/dev\/settings\/google-drive$/)).toBeVisible();
+    await drive.getByLabel('Client ID').fill('1234-abc.apps.googleusercontent.com');
+    await drive.getByLabel(/^Client secret/).fill('GOCSPX-journey-secret');
+    await drive.getByRole('button', { name: 'Save' }).click();
+    await expect(drive.getByText('Saved. Now connect the church’s Google account.')).toBeVisible();
+    await expect(page.getByText('GOCSPX-journey-secret')).toHaveCount(0);
+    await expect(drive.getByRole('button', { name: 'Connect Google Drive' })).toBeVisible();
+    await page.goto('/dev/settings/google-drive?code=made-up&state=forged');
+    await page.waitForURL(/\/dev\/settings\?drive=failed/);
+    await expect(drive.getByText(/does not match a connection started here/)).toBeVisible();
+    await drive.getByRole('button', { name: 'Remove the client' }).click();
+    await expect(drive.getByText(/Not set up: uploads are refused/)).toBeVisible();
+
     // The log level, changed and put back.
     const log = page.locator('section', { has: page.getByRole('heading', { name: 'Log level' }) });
     await log.getByLabel('Level').selectOption('debug');
