@@ -22,9 +22,8 @@ export default function AdministratorsGuidePage() {
 
       <Step n={2} title="Give someone access">
         <p>
-          A pastor or another administrator: <strong>Admin → Users → + Invite user</strong>,
-          their email and name, and tick what they are. They get an email and choose their own
-          password.
+          A pastor or another administrator: <strong>Admin → Users → + Invite user</strong>, their
+          email and name, and tick what they are. They get an email and choose their own password.
         </p>
         <p>
           Someone in Finance, Communications or Outreach gets that portal by being in the

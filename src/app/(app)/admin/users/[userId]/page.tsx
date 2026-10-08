@@ -25,7 +25,8 @@ type Person = {
   kinds: AccountKindKey[];
   places: string[];
   otherRoles: string[];
-  invitation: { expiresAt: string; expired: boolean; sentCount: number; accepted: boolean } | null;
+  invitation: { expiresAt: string; expired: boolean; sentCount: number; accepted: boolean; revoked: boolean } | null;
+  canDelete: boolean;
   isYou: boolean;
   canImpersonate: boolean;
   recentActivity: { at: string; action: string; summary: string | null }[];
@@ -118,6 +119,16 @@ export default async function PersonPage({ params }: { params: Promise<{ userId:
                 Sent {person.invitation.sentCount} time
                 {person.invitation.sentCount === 1 ? '' : 's'} · expires{' '}
                 {date(person.invitation.expiresAt)}
+              </p>
+            </div>
+          )}
+          {person.status === 'DISABLED' && person.invitation?.revoked && (
+            <div className="flex flex-col gap-1">
+              <Badge tone="muted">Invitation revoked</Badge>
+              <p className="text-fg3">
+                {person.canDelete
+                  ? 'They never joined, so you can delete them.'
+                  : 'Their invitation was revoked.'}
               </p>
             </div>
           )}

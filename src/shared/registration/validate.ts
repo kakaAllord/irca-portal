@@ -73,8 +73,13 @@ export function validateStep(step: Step, v: Values, lang: Lang): string {
     }
 
     case 'occDetail':
-      if (v.occ === 'Student' && !v.school.trim()) return need('fill', UI.lblStudy, lang);
-      if (v.occ === 'Professional' && !v.profession.trim()) return need('fill', UI.lblWorkQ, lang);
+      if ((v.occ === 'Student' || v.occ === 'Both') && !v.school.trim()) {
+        return need('fill', UI.lblStudy, lang);
+      }
+      if ((v.occ === 'Professional' || v.occ === 'Both') && !v.profession.trim()) {
+        return need('fill', UI.lblWorkQ, lang);
+      }
+      if (v.occ === 'Freelancer' && !v.profession.trim()) return need('fill', UI.lblFreeQ, lang);
       return '';
 
     // Every question on the screen, then whichever follow-ups the answer to

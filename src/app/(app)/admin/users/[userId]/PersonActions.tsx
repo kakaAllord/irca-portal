@@ -16,6 +16,8 @@ type Person = {
   status: 'ACTIVE' | 'INVITED' | 'DISABLED';
   isYou: boolean;
   canImpersonate: boolean;
+  canDelete?: boolean;
+  invitation?: { accepted: boolean; revoked: boolean } | null;
 };
 
 /** View as, disable and re-enable, and the invitation's own buttons. */
@@ -24,6 +26,8 @@ export function PersonActions({ me, person }: { me: MeResponse; person: Person }
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmDisable, setConfirmDisable] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const canManage = me.permissions.includes('admin.users.manage');
   const canInvite = me.permissions.includes('admin.users.invite');
@@ -31,7 +35,7 @@ export function PersonActions({ me, person }: { me: MeResponse; person: Person }
   async function call(
     what: string,
     run: () => Promise<unknown>,
-    after: 'refresh' | 'home' = 'refresh',
+    after: 'refresh' | 'home' | 'users' = 'refresh',
   ) {
     setBusy(what);
     setError(null);
@@ -42,12 +46,18 @@ export function PersonActions({ me, person }: { me: MeResponse; person: Person }
         sessionStorage.setItem('irca_return_to', window.location.pathname);
         router.replace('/');
       }
+      if (after === 'users') {
+        router.replace('/admin/users');
+        return;
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : 'Something went wrong.');
     } finally {
       setBusy(null);
       setConfirmDisable(false);
+      setConfirmRevoke(false);
+      setConfirmDelete(false);
     }
   }
 
@@ -72,14 +82,9 @@ export function PersonActions({ me, person }: { me: MeResponse; person: Person }
             </Button>
             <Button
               variant="ghost"
-              loading={busy === 'cancel'}
-              onClick={() =>
-                call('cancel', () =>
-                  clientApi(`/admin/users/${person.userId}/invitation`, { method: 'DELETE' }),
-                )
-              }
+              onClick={() => setConfirmRevoke(true)}
             >
-              Cancel invitation
+              Revoke invitation
             </Button>
           </>
         )}
@@ -89,7 +94,12 @@ export function PersonActions({ me, person }: { me: MeResponse; person: Person }
             Disable access
           </Button>
         )}
-        {canManage && person.status === 'DISABLED' && (
+        {canInvite && person.canDelete && (
+          <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+            Delete person
+          </Button>
+        )}
+        {canManage && person.status === 'DISABLED' && !person.canDelete && (
           <Button
             variant="secondary"
             loading={busy === 'enable'}
@@ -108,6 +118,58 @@ export function PersonActions({ me, person }: { me: MeResponse; person: Person }
       </div>
 
       {error && <Alert tone="error">{error}</Alert>}
+
+      <Dialog
+        open={confirmRevoke}
+        onClose={() => setConfirmRevoke(false)}
+        title={`Revoke the invitation for ${person.fullName}?`}
+        description="The link in their email stops working at once. You can delete them afterwards, since they never joined."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmRevoke(false)}>
+              Keep it
+            </Button>
+            <Button
+              variant="danger"
+              loading={busy === 'cancel'}
+              onClick={() =>
+                call('cancel', () =>
+                  clientApi(`/admin/users/${person.userId}/invitation`, { method: 'DELETE' }),
+                )
+              }
+            >
+              Revoke invitation
+            </Button>
+          </>
+        }
+      />
+
+      <Dialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title={`Delete ${person.fullName}?`}
+        description="They never joined, so nothing they did is lost. This removes them from the list for good."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              loading={busy === 'delete'}
+              onClick={() =>
+                call(
+                  'delete',
+                  () => clientApi(`/admin/users/${person.userId}`, { method: 'DELETE' }),
+                  'users',
+                )
+              }
+            >
+              Delete person
+            </Button>
+          </>
+        }
+      />
 
       <Dialog
         open={confirmDisable}
