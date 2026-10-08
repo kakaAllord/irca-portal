@@ -62,3 +62,18 @@ export async function serverApi<T>(path: string, init: Options = {}): Promise<T 
   if (!res.ok) throw await readApiError(res);
   return res.status === 204 ? null : ((await res.json()) as T);
 }
+
+/**
+ * Wakes the API's database. Neon's free plan puts it to sleep when nobody has
+ * used it for a few minutes, and the first query after that waits for it. A
+ * visitor opening the sign-in page is about to make one, so this asks now,
+ * while they type, and ignores the answer. Only a person's visit calls it,
+ * never a clock, so a quiet system stays asleep (D51).
+ */
+export async function warmApi(): Promise<void> {
+  try {
+    await fetch(`${API()}/health?db=1`, { cache: 'no-store', signal: AbortSignal.timeout(15_000) });
+  } catch {
+    // Warming is a courtesy; the sign-in works the same without it.
+  }
+}
