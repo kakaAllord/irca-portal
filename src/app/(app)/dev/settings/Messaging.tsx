@@ -95,7 +95,7 @@ export function EmailCard({ email }: { email: MessagingSettings['email'] }) {
 
   async function remove() {
     await clientApi('/dev/messaging/email', { method: 'DELETE' });
-    setNote({ tone: 'info', text: 'Removed. Emails go to the log again.' });
+    setNote({ tone: 'info', text: 'Removed. Emails stay in Dev → Comms lab again.' });
     router.refresh();
   }
 
@@ -117,7 +117,7 @@ export function EmailCard({ email }: { email: MessagingSettings['email'] }) {
         <p className="text-[12.5px] text-fg2">
           {email.sending === 'smtp'
             ? `Emails go out through ${email.user} on ${email.host}.`
-            : 'No account yet: every email is only written to the server log, where Dev → Logs shows it.'}
+            : 'No account yet: every email is kept in Dev → Comms lab, where its links can be read and followed.'}
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
@@ -272,14 +272,14 @@ export function TextsCard({
         {!beem.canSave && <Alert tone="warn">{NO_KEY}</Alert>}
         {beem.saved && !beem.live && (
           <Alert tone="warn">
-            This server writes texts to its log instead of sending them (SMS_LIVE is false). Test
-            connection still asks Beem for the credit.
+            This server keeps texts in Dev → Comms lab instead of sending them (SMS_LIVE is false).
+            Test connection still asks Beem for the credit.
           </Alert>
         )}
         <p className="text-[12.5px] text-fg2">
           {beem.saved
             ? `A key ending ${beem.keyHint} is saved.${beem.live ? ' Texts go through Beem.' : ''}`
-            : 'No Beem account yet: every text is only written to the server log, where Dev → Logs shows it.'}
+            : 'No Beem account yet: every text is kept in Dev → Comms lab, where its words can be read.'}
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <PasswordInput
