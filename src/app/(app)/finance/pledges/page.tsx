@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatMoney, type MeResponse, type PledgeCampaignView } from '@/shared';
+import { formatMoney, type PledgeCampaignView } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -16,7 +17,7 @@ export const metadata: Metadata = { title: 'Pledges' };
  * Totals only; who owes what is one level down, for those allowed to see it.
  */
 export default async function PledgesPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.pledges.read')) return <ForbiddenState what="pledges" />;
 
   const campaigns = await serverApi<PledgeCampaignView[]>('/finance/pledge-campaigns');

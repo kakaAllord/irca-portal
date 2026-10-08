@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -13,7 +13,7 @@ import { ago, bytes, number, type Health, type MigrationState } from '@/modules/
 export const metadata: Metadata = { title: 'Health' };
 
 export default async function HealthPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'dev.health.read')) return <ForbiddenState what="the health page" />;
 
   const health = await serverApi<Health>('/dev/health');

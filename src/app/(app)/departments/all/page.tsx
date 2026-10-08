@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { moduleByKey, type MeResponse } from '@/shared';
-import { serverApi } from '@/lib/api/server';
+import { moduleByKey } from '@/shared';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: 'Departments' };
  * same list with room to read, and where a phone lands.
  */
 export default async function AllDepartmentsPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'departments.all.read')) return <ForbiddenState what="every department" />;
   const departments = me.departments ?? [];
 

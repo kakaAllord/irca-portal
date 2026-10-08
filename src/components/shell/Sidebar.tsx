@@ -30,7 +30,9 @@ export function Sidebar({
   const me = useMe();
   const [collapsed, setCollapsed] = useState(collapsedInitially);
   const active = useActiveHref([
-    ...me.modules.flatMap((m) => m.nav.map((n) => n.href)),
+    ...me.modules.flatMap((m) =>
+      m.nav.flatMap((n) => [n.href, ...(n.sub ?? []).map((x) => x.href)]),
+    ),
     ...(me.departments ?? []).map((d) => `/departments/${d.id}`),
   ]);
 
@@ -98,6 +100,16 @@ export function Sidebar({
                 <DepartmentsNav
                   key={item.href}
                   item={item}
+                  active={active}
+                  collapsed={collapsed}
+                  onNavigate={onNavigate}
+                />
+              ) : item.sub ? (
+                <NavGroup
+                  key={item.href}
+                  item={item}
+                  entries={item.sub}
+                  noun={`the ${item.label} pages`}
                   active={active}
                   collapsed={collapsed}
                   onNavigate={onNavigate}
@@ -176,9 +188,8 @@ function NavBox({ icon, on }: { icon: NavItem['icon']; on: boolean }) {
 
 /**
  * Departments, for the pastors and administrators who oversee them (14.2): a
- * chevron opens every department by name under the item. Collapsed, the icon
- * opens the same list beside the sidebar. The list comes with the session,
- * so opening it asks the server nothing.
+ * chevron opens every department by name under the item. The list comes with
+ * the session, so opening it asks the server nothing.
  */
 function DepartmentsNav({
   item,
@@ -192,9 +203,43 @@ function DepartmentsNav({
   onNavigate?: () => void;
 }) {
   const me = useMe();
-  const departments = me.departments ?? [];
-  const hrefOf = (id: string) => `/departments/${id}`;
-  const inside = departments.some((d) => hrefOf(d.id) === active);
+  const entries = (me.departments ?? []).map((d) => ({
+    label: d.name,
+    href: `/departments/${d.id}`,
+  }));
+  return (
+    <NavGroup
+      item={item}
+      entries={entries}
+      noun="the departments"
+      active={active}
+      collapsed={collapsed}
+      onNavigate={onNavigate}
+    />
+  );
+}
+
+/**
+ * An item with pages under it: a chevron opens them beneath the item.
+ * Collapsed, the icon opens the same list beside the sidebar.
+ */
+function NavGroup({
+  item,
+  entries,
+  noun,
+  active,
+  collapsed,
+  onNavigate,
+}: {
+  item: NavItem;
+  entries: { label: string; href: string }[];
+  /** What the chevron is said to open: "the departments". */
+  noun: string;
+  active: string | null;
+  collapsed: boolean;
+  onNavigate?: () => void;
+}) {
+  const inside = entries.some((e) => e.href === active);
   const [open, setOpen] = useState(inside);
   // Where the flyout opens: beside the button, fixed to the window, since the
   // sidebar's scrolling list would clip anything reaching out of it.
@@ -218,12 +263,12 @@ function DepartmentsNav({
 
   const list = (
     <ul className="flex flex-col gap-0.5">
-      {departments.map((d) => {
-        const on = hrefOf(d.id) === active;
+      {entries.map((entry) => {
+        const on = entry.href === active;
         return (
-          <li key={d.id}>
+          <li key={entry.href}>
             <Link
-              href={hrefOf(d.id)}
+              href={entry.href}
               onClick={() => {
                 setFlyout(null);
                 onNavigate?.();
@@ -236,7 +281,7 @@ function DepartmentsNav({
                   : 'text-fg2 hover:bg-hover hover:text-fg',
               )}
             >
-              {d.name}
+              {entry.label}
             </Link>
           </li>
         );
@@ -286,7 +331,7 @@ function DepartmentsNav({
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          aria-label={open ? 'Hide the departments' : 'Show the departments'}
+          aria-label={open ? `Hide ${noun}` : `Show ${noun}`}
           className="flex size-7 flex-none items-center justify-center rounded-[7px] text-fg3 hover:bg-hover hover:text-fg"
         >
           <svg

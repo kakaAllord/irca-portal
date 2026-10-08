@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { cn } from '@/lib/cn';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -26,7 +26,7 @@ type Params = {
  * by phone is the team's job — and marked where a record is still thin.
  */
 export default async function ReachedListPage({ searchParams }: { searchParams: Promise<Params> }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'outreach.reached.read')) return <ForbiddenState what="the people reached" />;
   const params = await searchParams;
   const query = new URLSearchParams(

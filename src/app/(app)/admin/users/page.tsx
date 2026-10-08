@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ACCOUNT_KINDS, type AccountKindKey, type MeResponse } from '@/shared';
+import { ACCOUNT_KINDS, type AccountKindKey } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -47,7 +48,7 @@ export default async function PeoplePage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'admin.users.read')) return <ForbiddenState what="the users of this church" />;
 
   const params = await searchParams;

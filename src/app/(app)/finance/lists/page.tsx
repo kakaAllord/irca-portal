@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { CatalogItem, MeResponse } from '@/shared';
+import type { CatalogItem } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { cn } from '@/lib/cn';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -40,7 +41,7 @@ export default async function CategoriesPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.catalog.read')) return <ForbiddenState what="the finance categories" />;
 
   const params = await searchParams;

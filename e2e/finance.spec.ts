@@ -60,7 +60,10 @@ test.describe('recording money', () => {
     const item = unique('Generator fuel');
     await signIn(page, CLERK);
 
-    await page.getByRole('link', { name: 'Transactions' }).click();
+    await page
+      .getByRole('navigation', { name: 'Portals' })
+      .getByRole('link', { name: 'Transactions', exact: true })
+      .click();
     // The form is the right-hand drawer, as every other form in the portal is.
     // A click that lands before the page has hydrated opens nothing, so it is
     // tried again the way a person would, until the drawer is there.

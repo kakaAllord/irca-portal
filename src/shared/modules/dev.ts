@@ -13,7 +13,7 @@ import { defineModule } from '../rbac/define';
 export const devModule = defineModule({
   key: 'dev',
   name: 'Dev console',
-  description: 'The health of the system, its logs, and who viewed as whom.',
+  description: 'The health of the system, its logs, who viewed as whom, and the Comms lab.',
   kind: 'core',
   home: '/dev',
   permissions: {
@@ -38,6 +38,16 @@ export const devModule = defineModule({
       label: 'See every role, what it allows, and who holds what',
       hint: 'Read-only. Roles are the engine underneath; nobody edits them in the portal (D43).',
     },
+    'dev.lab.read': {
+      kind: 'read',
+      label: 'Read every email and text the system sent, in the Comms lab',
+      hint: 'Includes one-time links and phone numbers, in the clear, for testing without an email or Beem account.',
+    },
+    'dev.lab.manage': {
+      kind: 'write',
+      label: 'Choose where the whole app sends email and texts',
+      hint: 'Dev only, Dev and live, or Live only. Also empties the Comms lab.',
+    },
     'dev.church.manage': {
       kind: 'write',
       label: "Change the church's settings and the registration form's keys",
@@ -48,7 +58,8 @@ export const devModule = defineModule({
     {
       key: 'dev.developer',
       name: 'Developer',
-      description: 'Reads the health, the logs and the view-as log, and can view as anyone.',
+      description:
+        'Reads the health, the logs, the view-as log and the Comms lab, and can view as anyone.',
       permissions: [
         'dev.health.read',
         'dev.usage.read',
@@ -56,6 +67,8 @@ export const devModule = defineModule({
         'dev.users.impersonate',
         'dev.impersonations.read',
         'dev.access.read',
+        'dev.lab.read',
+        'dev.lab.manage',
         'dev.church.manage',
       ],
     },
@@ -72,6 +85,16 @@ export const devModule = defineModule({
       permission: 'dev.impersonations.read',
     },
     { label: 'Access', href: '/dev/access', icon: 'access', permission: 'dev.access.read' },
+    {
+      label: 'Comms lab',
+      href: '/dev/lab',
+      icon: 'messages',
+      permission: 'dev.lab.read',
+      sub: [
+        { label: 'SMS', href: '/dev/lab/sms' },
+        { label: 'Email', href: '/dev/lab/email' },
+      ],
+    },
     { label: 'Settings', href: '/dev/settings', icon: 'settings', permission: 'dev.church.manage' },
   ],
 });

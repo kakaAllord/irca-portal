@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { formatMoney, type BudgetLine, type BudgetMonth, type MeResponse } from '@/shared';
+import { formatMoney, type BudgetLine, type BudgetMonth } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { cn } from '@/lib/cn';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -36,7 +37,7 @@ export default async function BudgetsPage({
 }: {
   searchParams: Promise<{ month?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.budgets.read')) return <ForbiddenState what="department budgets" />;
 
   const { month } = await searchParams;

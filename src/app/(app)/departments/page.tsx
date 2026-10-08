@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: 'My departments' };
  * leaders do, goes straight to it: a list of one is a step for nothing.
  */
 export default async function MyDepartmentsPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'departments.own.read')) return <ForbiddenState what="departments" />;
 
   const mine = await serverApi<MyDepartment[]>('/departments/mine');

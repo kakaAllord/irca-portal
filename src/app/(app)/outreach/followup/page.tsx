@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: 'Follow-up' };
  * first, with a number to ring and the last thing that happened.
  */
 export default async function FollowUpPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'outreach.reached.read')) return <ForbiddenState what="the follow-up" />;
   const people = await serverApi<PendingFollowUp[]>('/outreach/followup');
 

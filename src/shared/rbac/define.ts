@@ -70,6 +70,12 @@ export type NavItem = {
    * department, which the session sends to those who oversee them (14.2).
    */
   children?: 'departments';
+  /**
+   * Fixed pages that open under the item in the sidebar, like Departments
+   * does. They are pages of the same portal, so they need no permission of
+   * their own: whoever sees the item sees them.
+   */
+  sub?: { label: string; href: string }[];
 };
 
 export type SystemRoleDef = {

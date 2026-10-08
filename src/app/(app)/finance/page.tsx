@@ -1,13 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import {
-  formatMoney,
-  type AccountsResponse,
-  type FinanceTransaction,
-  type MeResponse,
-} from '@/shared';
+import { formatMoney, type AccountsResponse, type FinanceTransaction } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -46,7 +42,7 @@ export default async function FinanceOverview({
 }: {
   searchParams: Promise<{ month?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.overview.read')) return <ForbiddenState what="the finance overview" />;
 
   const { month } = await searchParams;

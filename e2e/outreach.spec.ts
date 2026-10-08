@@ -199,6 +199,25 @@ test('a GO day, from planning to the dashboard', async ({ browser, request }) =>
     { name: `Neema ${stamp}`, phone: `0${known.phone}` },
   ]);
 
+  // The leader attaches the day's report as a PDF; Word files are refused
+  // before they are sent.
+  await page.goto(session);
+  const report = page.locator('section', { has: page.getByRole('heading', { name: 'Report' }) });
+  await expect(report.getByText(/No report yet/)).toBeVisible();
+  await report.getByLabel('Choose the report, a PDF').setInputFiles({
+    name: 'notes.docx',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    buffer: Buffer.from('PK not a pdf'),
+  });
+  await expect(report.getByText(/Only a PDF can be attached/)).toBeVisible();
+  await report.getByLabel('Choose the report, a PDF').setInputFiles({
+    name: `Sombetini ${stamp}.pdf`,
+    mimeType: 'application/pdf',
+    buffer: Buffer.concat([Buffer.from('%PDF-1.7\n'), Buffer.alloc(4096)]),
+  });
+  await expect(report.getByText(`Sombetini ${stamp}.pdf`)).toBeVisible();
+  await expect(report.getByRole('button', { name: 'Attach a new version' })).toBeVisible();
+
   // Baraka is followed up twice.
   await page.goto(`/outreach/reached?q=${encodeURIComponent(`Baraka ${stamp}`)}`);
   await page.getByRole('link', { name: `Baraka ${stamp}` }).click();

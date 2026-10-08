@@ -3,11 +3,11 @@ import Link from 'next/link';
 import {
   formatMoney,
   PLEDGE_STATUS_LABEL,
-  type MeResponse,
   type PledgeCampaignView,
   type PledgeView,
 } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -27,7 +27,7 @@ export default async function CampaignNamesPage({
   params: Promise<{ id: string; campaignId: string }>;
 }) {
   const { id, campaignId } = await params;
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.pledges.read_sensitive')) {
     return <ForbiddenState what="who pledged what" />;
   }

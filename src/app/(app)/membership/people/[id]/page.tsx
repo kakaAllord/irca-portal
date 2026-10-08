@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { PLEDGE_STATUS_LABEL, formatMoney, type MeResponse, type PledgeDetail } from '@/shared';
+import { PLEDGE_STATUS_LABEL, formatMoney, type PledgeDetail } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { cn } from '@/lib/cn';
 import { ForbiddenState } from '@/components/shell/States';
@@ -56,7 +57,7 @@ export default async function PersonPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'membership.people.read')) return <ForbiddenState what="this person's record" />;
 
   const { id } = await params;

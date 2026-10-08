@@ -234,6 +234,21 @@ export type AccessAccounts = {
 };
 
 /** Dev → Settings: email, texts and the log level (D52). Never a password or a key. */
+/** Dev → Settings → Google Drive (D58): where uploaded files are kept. */
+export type DriveSettings = {
+  saved: boolean;
+  clientId: string | null;
+  folderName: string;
+  canSave: boolean;
+  connected: boolean;
+  account: string | null;
+  connectedAt: string | null;
+  /** Why the connection stopped working, when Google withdrew it. */
+  lost: string | null;
+  space: { used: number; limit: number | null } | null;
+  folderUrl: string | null;
+};
+
 export type MessagingSettings = {
   email: {
     saved: boolean;

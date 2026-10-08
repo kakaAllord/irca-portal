@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -10,7 +10,7 @@ import type { Template } from '@/modules/comms/types';
 export const metadata: Metadata = { title: 'Templates' };
 
 export default async function TemplatesPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'comms.templates.read')) return <ForbiddenState what="templates" />;
   const templates = await serverApi<Template[]>('/comms/templates');
   return (

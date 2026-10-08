@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { initialsOf, type MeResponse } from '@/shared';
+import { initialsOf } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { cn } from '@/lib/cn';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -44,7 +45,7 @@ export default async function PrayersPage({
 }: {
   searchParams: Promise<{ q?: string; month?: string; theme?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'membership.prayers.read')) return <ForbiddenState what="prayer requests" />;
   const params = await searchParams;
   const query = new URLSearchParams(

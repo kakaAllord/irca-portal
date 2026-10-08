@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ProfileForm } from './ProfileForm';
 import { PasswordForm } from './PasswordForm';
@@ -19,7 +19,7 @@ export type Device = {
 };
 
 export default async function AccountPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   const devices = await serverApi<Device[]>('/me/sessions');
   const texts = await serverApi<{ optOut: boolean; phone: string | null }>('/me/messages');
   const viewing = me.impersonation !== null;

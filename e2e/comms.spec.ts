@@ -181,6 +181,9 @@ test('a leader messages their department, and a STOP is honoured on the next sen
     .poll(
       async () => {
         await leader.reload();
+        // A reload resolves with the page's skeleton still up for a moment;
+        // the cells are counted once the real page has replaced it.
+        await expect(leader.locator('[aria-busy="true"]')).toHaveCount(0);
         return leader.getByRole('cell', { name: /^Sent/ }).count();
       },
       { timeout: 45_000, intervals: [3_000] },

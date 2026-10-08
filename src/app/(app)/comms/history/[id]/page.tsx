@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: 'Message' };
 
 export default async function MessagePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'comms.messages.read')) return <ForbiddenState what="what was sent" />;
   const message = await serverApi<MessageDetail>(`/comms/messages/${id}`);
   return (
