@@ -219,4 +219,9 @@ export type ReportVersion = {
   uploadedAt: string;
   uploadedBy: string | null;
 };
-export type ReportVersions = { current: ReportVersion | null; earlier: ReportVersion[] };
+export type ReportVersions = {
+  current: ReportVersion | null;
+  earlier: ReportVersion[];
+  /** Whether files can be kept and opened: false until Google Drive is connected (D58). */
+  storage: boolean;
+};

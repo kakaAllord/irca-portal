@@ -78,12 +78,12 @@ export function ReportPanel({
     }
   }
 
-  const { current, earlier } = versions;
+  const { current, earlier, storage } = versions;
   return (
     <section className="flex flex-col gap-3 rounded-[10px] border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-[13px] font-semibold text-fg">Report</h2>
-        {canUpload && (
+        {canUpload && storage && (
           <>
             <input
               ref={input}
@@ -102,6 +102,12 @@ export function ReportPanel({
           </>
         )}
       </div>
+      {!storage && (
+        <Alert tone="warn">
+          Reports cannot be attached or opened yet: the church&apos;s Google Drive is not connected.
+          The developer connects it in Dev → Settings.
+        </Alert>
+      )}
       {error && <Alert tone="error">{error}</Alert>}
       {current ? (
         <div className="flex flex-wrap items-center justify-between gap-2 text-[12.5px]">
@@ -112,13 +118,14 @@ export function ReportPanel({
               {current.uploadedBy && ` · ${current.uploadedBy}`}
             </span>
           </span>
-          <Button size="sm" onClick={() => open()}>
+          <Button size="sm" disabled={!storage} onClick={() => open()}>
             Open
           </Button>
         </div>
       ) : (
         <p className="text-[12.5px] text-fg3">
-          No report yet. {canUpload ? 'The leader attaches it as a PDF, up to 10 MB.' : null}
+          No report yet.{' '}
+          {canUpload && storage ? 'The leader attaches it as a PDF, up to 10 MB.' : null}
         </p>
       )}
       {earlier.length > 0 && (
@@ -132,7 +139,7 @@ export function ReportPanel({
                 <span className="text-fg3">
                   {v.name} · {when(v.uploadedAt)}
                 </span>
-                <Button size="sm" variant="ghost" onClick={() => open(v)}>
+                <Button size="sm" variant="ghost" disabled={!storage} onClick={() => open(v)}>
                   Open
                 </Button>
               </li>
