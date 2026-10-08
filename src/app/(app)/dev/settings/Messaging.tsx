@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { clientApi } from '@/lib/api/client';
 import { ApiRequestError } from '@/lib/api/errors';
@@ -79,13 +80,21 @@ export function EmailCard({ email }: { email: MessagingSettings['email'] }) {
     setTesting(true);
     setNote(null);
     try {
-      const res = await clientApi<{ ok: boolean; error?: string; to: string }>(
-        '/dev/messaging/email/test',
-        { method: 'POST' },
-      );
+      const res = await clientApi<{
+        ok: boolean;
+        error?: string;
+        to: string;
+        labMode: MessagingSettings['email']['labMode'];
+      }>('/dev/messaging/email/test', { method: 'POST' });
       setNote(
         res.ok
-          ? { tone: 'info', text: `Sent to ${res.to}. Check it arrived, and not in spam.` }
+          ? {
+              tone: res.labMode === 'lab' ? 'error' : 'info',
+              text:
+                res.labMode === 'lab'
+                  ? `Sent to ${res.to}, so the account works. But the system itself sends nothing: Dev → Comms lab is on Dev only. Switch it to Dev and live.`
+                  : `Sent to ${res.to}. Check it arrived, and not in spam.`,
+            }
           : { tone: 'error', text: res.error ?? 'It was not sent.' },
       );
     } finally {
@@ -114,6 +123,16 @@ export function EmailCard({ email }: { email: MessagingSettings['email'] }) {
     >
       <div className="flex flex-col gap-4">
         {!email.canSave && <Alert tone="warn">{NO_KEY}</Alert>}
+        {email.labMode === 'lab' && (
+          <Alert tone="warn">
+            Dev → Comms lab is on <strong>Dev only</strong>, so invitations, resets and alerts are
+            kept there and not sent, even with this account saved.{' '}
+            <Link href="/dev/lab" className="underline">
+              Switch it to Dev and live
+            </Link>
+            .
+          </Alert>
+        )}
         <p className="text-[12.5px] text-fg2">
           {email.sending === 'smtp'
             ? `Emails go out through ${email.user} on ${email.host}.`

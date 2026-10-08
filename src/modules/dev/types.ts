@@ -258,6 +258,8 @@ export type MessagingSettings = {
     from: string | null;
     canSave: boolean;
     sending: 'smtp' | 'log' | 'memory';
+    /** Dev → Comms lab's switch: on 'lab' the system's emails are kept, not sent. */
+    labMode: 'lab' | 'both' | 'live';
   };
   beem: {
     saved: boolean;
