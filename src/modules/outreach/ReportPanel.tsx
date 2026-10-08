@@ -18,9 +18,10 @@ const when = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
- * A GO day's report, as the leader writes it: a PDF of up to 10 MB, kept on
- * the church's own file storage and opened only by those who may read it.
- * Attaching another keeps this one as an earlier version.
+ * A GO day's report, as the leader writes it: a PDF of up to 10 MB, kept in
+ * the church's Google Drive (D58) and opened only through the system, by
+ * those who may read it. Attaching another keeps this one as an earlier
+ * version.
  */
 export function ReportPanel({
   sessionId,
