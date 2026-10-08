@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { ApiRequestError } from '@/lib/api/errors';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -22,7 +22,7 @@ export default async function FigurePage({
   params: Promise<{ figure: string }>;
   searchParams: Promise<{ from?: string; to?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'outreach.dashboard.read')) return <ForbiddenState what="the Outreach dashboard" />;
   const { figure } = await params;
   const query = new URLSearchParams(

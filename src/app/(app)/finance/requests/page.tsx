@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { ChangeRequestView, MeResponse } from '@/shared';
+import type { ChangeRequestView } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { cn } from '@/lib/cn';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -24,7 +25,7 @@ export default async function FinanceRequestsPage({
 }: {
   searchParams: Promise<{ mine?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.transactions.read')) return <ForbiddenState what="finance requests" />;
 
   const params = await searchParams;

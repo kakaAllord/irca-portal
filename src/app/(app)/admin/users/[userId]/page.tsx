@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { AccountKindKey, MeResponse } from '@/shared';
+import type { AccountKindKey } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -37,7 +38,7 @@ const date = (iso: string | null) =>
 
 export default async function PersonPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'admin.users.read')) return <ForbiddenState what="the users of this church" />;
 
   const person = await serverApi<Person>(`/admin/users/${userId}`);

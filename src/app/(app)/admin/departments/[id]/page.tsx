@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -17,7 +17,7 @@ export const metadata: Metadata = { title: 'Department' };
 
 export default async function DepartmentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'admin.departments.read')) return <ForbiddenState what="departments" />;
 
   const [department, all] = await Promise.all([

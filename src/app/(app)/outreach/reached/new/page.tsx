@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { ApiRequestError } from '@/lib/api/errors';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -26,7 +26,7 @@ export default async function RecordPage({
 }: {
   searchParams: Promise<{ session?: string; team?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'outreach.reached.record')) return <ForbiddenState what="recording people" />;
   const params = await searchParams;
 

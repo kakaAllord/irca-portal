@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -21,7 +21,7 @@ export const metadata: Metadata = { title: 'Settings' };
  * wrong, and how much the server writes to its log.
  */
 export default async function SettingsPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'dev.church.manage')) return <ForbiddenState what="the settings" />;
 
   const [church, messaging, alerts] = await Promise.all([

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -18,7 +18,7 @@ export const metadata: Metadata = { title: 'Access' };
  * People is the administrators' and not the developer's.
  */
 export default async function AccessPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'dev.access.read')) return <ForbiddenState what="access" />;
 
   const [roles, accounts] = await Promise.all([

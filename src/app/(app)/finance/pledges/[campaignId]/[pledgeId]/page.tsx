@@ -1,13 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import {
-  PLEDGE_RHYTHMS,
-  PLEDGE_STATUS_LABEL,
-  formatMoney,
-  type MeResponse,
-  type PledgeDetail,
-} from '@/shared';
+import { PLEDGE_RHYTHMS, PLEDGE_STATUS_LABEL, formatMoney, type PledgeDetail } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -28,7 +23,7 @@ export default async function PledgePage({
 }: {
   params: Promise<{ campaignId: string; pledgeId: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.pledges.read_sensitive') && !can(me, 'finance.pledges.record_payment')) {
     return <ForbiddenState what="this pledge" />;
   }

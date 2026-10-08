@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -20,7 +20,7 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<{ kind?: string; date?: string; from?: string; to?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.reports.read')) return <ForbiddenState what="finance reports" />;
 
   const params = await searchParams;

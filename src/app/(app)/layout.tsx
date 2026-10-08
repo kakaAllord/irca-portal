@@ -1,6 +1,5 @@
 import { cookies } from 'next/headers';
-import type { MeResponse } from '@/shared';
-import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { SessionProvider } from '@/lib/session';
 import { Shell } from '@/components/shell/Shell';
 import { THEME_COOKIE, themeFrom } from '@/lib/theme';
@@ -11,7 +10,7 @@ import { THEME_COOKIE, themeFrom } from '@/lib/theme';
  * has lost its church is sent to sign in at once rather than on the next click.
  */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   const jar = await cookies();
   return (
     <SessionProvider me={me}>

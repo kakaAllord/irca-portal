@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { PageHeader } from '@/components/shell/PageHeader';
-import type { MeResponse } from '@/shared';
-import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { guidesFor } from '@/lib/guides';
 
 export const metadata: Metadata = { title: 'Help' };
@@ -12,7 +11,7 @@ export const metadata: Metadata = { title: 'Help' };
  * the ones for what you use, so Communications is not handed Finance's.
  */
 export default async function HelpPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   return (
     <>
       <PageHeader title="Help" subtitle="Each guide is one page, and prints as one." />

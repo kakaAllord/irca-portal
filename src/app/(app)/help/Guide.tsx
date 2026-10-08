@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import type { MeResponse } from '@/shared';
-import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { GUIDES, guidesFor } from '@/lib/guides';
 import { PrintButton } from './PrintButton';
 
@@ -25,7 +24,7 @@ export async function Guide({
   intro: string;
   children: ReactNode;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (
     GUIDES.some((g) => g.href === href) &&
     !guidesFor(me.permissions).some((g) => g.href === href)

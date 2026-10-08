@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { formatMoney, type MeResponse } from '@/shared';
+import { formatMoney } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { cn } from '@/lib/cn';
 import { PageHeader } from '@/components/shell/PageHeader';
@@ -48,7 +49,7 @@ type Overview = {
  * where it is handled. The administrator's home.
  */
 export default async function AdminOverviewPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'admin.overview.read')) return <ForbiddenState what="the overview" />;
   const o = await serverApi<Overview>('/admin/overview');
   const currency = me.church?.currency ?? 'TZS';

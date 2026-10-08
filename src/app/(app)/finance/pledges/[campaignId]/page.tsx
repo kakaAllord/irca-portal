@@ -5,12 +5,12 @@ import {
   PLEDGE_RHYTHMS,
   PLEDGE_STATUS_LABEL,
   formatMoney,
-  type MeResponse,
   type PledgeCampaignView,
   type PledgeFilter,
   type PledgeView,
 } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -35,7 +35,7 @@ export default async function CampaignPage({
   params: Promise<{ campaignId: string }>;
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.pledges.read')) return <ForbiddenState what="pledges" />;
 
   const { campaignId } = await params;

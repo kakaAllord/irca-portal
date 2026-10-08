@@ -1,12 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import {
-  formatMoney,
-  type ChangeRequestView,
-  type FinanceTransaction,
-  type MeResponse,
-} from '@/shared';
+import { formatMoney, type ChangeRequestView, type FinanceTransaction } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -26,7 +22,7 @@ type HistoryLine = { id: string; at: string; who: string; action: string; summar
  * The menu sends a request; an administrator decides it in Admin → Requests.
  */
 export default async function EntryPage({ params }: { params: Promise<{ code: string }> }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.transactions.read')) return <ForbiddenState what="finance entries" />;
 
   const { code } = await params;

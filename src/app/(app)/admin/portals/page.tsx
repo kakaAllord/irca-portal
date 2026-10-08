@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { isAssignable, moduleByKey, type MeResponse } from '@/shared';
+import { isAssignable, moduleByKey } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -22,7 +23,7 @@ type Portal = {
 };
 
 export default async function PortalsPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'admin.modules.read')) return <ForbiddenState what="portals" />;
 
   const portals = await serverApi<Portal[]>('/admin/modules');

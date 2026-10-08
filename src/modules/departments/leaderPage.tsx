@@ -1,6 +1,7 @@
 import 'server-only';
 import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { ApiRequestError } from '@/lib/api/errors';
 import type { DepartmentDetail } from './types';
 
@@ -11,7 +12,7 @@ import type { DepartmentDetail } from './types';
 export async function leaderDepartment(
   id: string,
 ): Promise<{ me: MeResponse; department: DepartmentDetail } | null> {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!me.permissions.includes('departments.own.read')) return null;
   try {
     return { me, department: await serverApi<DepartmentDetail>(`/departments/${id}`) };

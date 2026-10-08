@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { ChangeRequestView, MeResponse } from '@/shared';
+import type { ChangeRequestView } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -68,7 +69,7 @@ export default async function RequestsPage({
 }: {
   searchParams: Promise<{ status?: string; module?: string; tab?: string }>;
 }) {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'admin.requests.read')) return <ForbiddenState what="change requests" />;
 
   const params = await searchParams;

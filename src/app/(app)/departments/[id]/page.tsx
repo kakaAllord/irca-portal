@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { MeResponse } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { ForbiddenState } from '@/components/shell/States';
@@ -36,7 +36,7 @@ export default async function DepartmentPage({
 }) {
   const { id } = await params;
   const { period } = await searchParams;
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   const oversees = can(me, 'departments.all.read') || can(me, 'admin.departments.read');
   if (!can(me, 'departments.own.read') && !oversees) {
     return <ForbiddenState what="departments" />;

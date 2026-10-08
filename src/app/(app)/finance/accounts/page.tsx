@@ -5,10 +5,10 @@ import {
   type AccountsResponse,
   type ExchangeRateView,
   type FinanceAccountView,
-  type MeResponse,
   type PaymentMethod,
 } from '@/shared';
 import { serverApi } from '@/lib/api/server';
+import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
@@ -36,7 +36,7 @@ export const metadata: Metadata = { title: 'Accounts' };
  * time the page is opened.
  */
 export default async function AccountsPage() {
-  const me = await serverApi<MeResponse>('/auth/me');
+  const me = await getMe();
   if (!can(me, 'finance.accounts.read')) return <ForbiddenState what="the finance accounts" />;
 
   const data = await serverApi<AccountsResponse>('/finance/accounts');
