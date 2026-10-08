@@ -329,8 +329,16 @@ export const UI = {
   lblOcc: T('Occupation type', 'Aina ya shughuli', "Type d'occupation"),
   occStudy: T('Studying', 'Ninasoma', "J'étudie"),
   occWork: T('Working', 'Nafanya kazi', 'Je travaille'),
+  occFree: T('Freelancing', 'Najiajiri', 'Je suis indépendant(e)'),
+  occBoth: T('Studying and working', 'Nasoma na kufanya kazi', "J'étudie et je travaille"),
+  occNone: T('None of these', 'Hakuna kati ya hizi', 'Aucun de ceux-ci'),
 
   lblStudy: T('Tell us where you study', 'Tuambie unasomea wapi', 'Où étudiez-vous ?'),
+  lblFreeQ: T(
+    'What freelance work do you do?',
+    'Unafanya kazi gani ya kujiajiri?',
+    'Quel travail indépendant faites-vous ?',
+  ),
   lblWorkQ: T('What work do you do?', 'Unafanya kazi gani?', 'Quel travail faites-vous ?'),
   workHint: T(
     'More than one is fine.',
@@ -740,7 +748,8 @@ export const STEPS: Step[] = [
     type: 'occDetail',
     memberOnly: true,
     req: true,
-    when: (v) => !!v.occ,
+    // Someone who is neither studying nor working has nothing more to tell.
+    when: (v) => !!v.occ && v.occ !== 'None',
     q: T(
       'A little more about your days',
       'Kidogo zaidi kuhusu siku zako',
@@ -907,7 +916,13 @@ const CHIP_LABELS: Record<string, Record<string, Txt>> = {
   gender: { Male: UI.male, Female: UI.female },
   age: { 'Under 18': UI.a18, '19–35': UI.a19, '36–44': UI.a36, '45+': UI.a45 },
   marital: { Single: UI.m1, Married: UI.m2, Widowed: UI.m3, Separated: UI.m4 },
-  occ: { Student: UI.occStudy, Professional: UI.occWork },
+  occ: {
+    Student: UI.occStudy,
+    Professional: UI.occWork,
+    Freelancer: UI.occFree,
+    Both: UI.occBoth,
+    None: UI.occNone,
+  },
   stay: {
     'Just today': UI.s1,
     'A few days': UI.s2,
