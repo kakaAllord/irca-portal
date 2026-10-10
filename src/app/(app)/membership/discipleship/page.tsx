@@ -28,7 +28,6 @@ type Card = {
   memberNumber: number | null;
   readyToApply: boolean;
 };
-type Board = { sessions: number; columns: { stage: Stage; count: number; cards: Card[] }[] };
 type Listed = {
   sessions: number;
   counts: { stage: Stage; count: number }[];
@@ -53,19 +52,9 @@ export type RegisterData = {
   }[];
 };
 
-const VIEWS = ['board', 'table', 'sessions', 'register'] as const;
+const VIEWS = ['table', 'sessions', 'register'] as const;
 type View = (typeof VIEWS)[number];
 const PAGE_SIZE = 50;
-
-/** Where someone is in the class, in a few words, on a card or a row. */
-const about = (card: Card) =>
-  [
-    card.group,
-    card.progress && `${card.progress.attended} of ${card.progress.of} sessions`,
-    card.memberNumber && `Member ${card.memberNumber}`,
-  ]
-    .filter(Boolean)
-    .join(' · ') || (card.baptised ? 'Baptised' : 'Not in a class yet');
 
 /**
  * From the decision to follow Christ to full membership. A group of new
@@ -82,18 +71,14 @@ export default async function DiscipleshipPage({
     return <ForbiddenState what="the foundation class" />;
 
   const params = await searchParams;
-  const view: View = VIEWS.find((v) => v === params.view) ?? 'board';
-  const people = view === 'board' || view === 'table';
+  const view: View = VIEWS.find((v) => v === params.view) ?? 'table';
+  const people = view === 'table';
   const groups = await serverApi<Group[]>('/membership/discipleship/groups');
   const active = groups.filter((g) => g.isActive);
   const group = params.group ?? (people ? undefined : active[0]?.id);
-  const stage = view === 'table' && params.stage && params.stage in STAGE_LABEL ? params.stage : '';
+  const stage = people && params.stage && params.stage in STAGE_LABEL ? params.stage : '';
   const page = Math.max(1, Number(params.page) || 1);
 
-  const board =
-    view === 'board'
-      ? await serverApi<Board>(`/membership/discipleship/board${group ? `?group=${group}` : ''}`)
-      : null;
   const listed =
     view === 'table'
       ? await serverApi<Listed>(
@@ -121,7 +106,7 @@ export default async function DiscipleshipPage({
   const query = (next: { view?: View; group?: string; stage?: string }) => {
     const q = new URLSearchParams();
     const v = next.view ?? view;
-    if (v !== 'board') q.set('view', v);
+    if (v !== 'table') q.set('view', v);
     const g = 'group' in next ? next.group : group;
     if (g) q.set('group', g);
     const s = 'stage' in next ? next.stage : stage;
@@ -166,14 +151,14 @@ export default async function DiscipleshipPage({
           <nav aria-label="Views" className="flex flex-wrap items-center gap-1.5">
             {(
               [
-                ['board', 'People', people],
+                ['table', 'People', people],
                 ['sessions', 'Sessions', view === 'sessions'],
                 ['register', 'Class register', view === 'register'],
               ] as const
             ).map(([key, label, on]) => (
               <Link
                 key={key}
-                href={link({ view: key === 'board' && view === 'table' ? 'table' : key })}
+                href={link({ view: key })}
                 aria-current={on ? 'page' : undefined}
                 className={pill(on)}
               >
@@ -182,88 +167,7 @@ export default async function DiscipleshipPage({
             ))}
           </nav>
         </div>
-        {people && (
-          <div
-            role="group"
-            aria-label="Show people as"
-            className="inline-flex rounded-[8px] border border-border p-0.5"
-          >
-            {(
-              [
-                ['board', 'Board'],
-                ['table', 'Table'],
-              ] as const
-            ).map(([key, label]) => (
-              <Link
-                key={key}
-                href={link({ view: key })}
-                aria-current={view === key ? 'page' : undefined}
-                className={cn(
-                  'rounded-[6px] px-3 py-1 text-[12px]',
-                  view === key ? 'bg-chip font-medium text-fg' : 'text-fg2 hover:bg-hover',
-                )}
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
-
-      {board && (
-        <div className="grid gap-3 overflow-x-auto md:grid-cols-5">
-          {board.columns.map((column) => (
-            <section
-              key={column.stage}
-              className="flex min-w-[200px] flex-col gap-2 rounded-[10px] bg-surface2 p-2.5"
-            >
-              <h2 className="flex items-center justify-between px-1 text-[12px] font-semibold text-fg">
-                {STAGE_LABEL[column.stage]}
-                <span className="text-fg3 tabular-nums">{column.count}</span>
-              </h2>
-              {column.cards.length === 0 && (
-                <p className="px-1 text-[11.5px] text-fg3">Nobody yet.</p>
-              )}
-              {column.cards.map((card) => (
-                <Link
-                  key={card.personId}
-                  href={`/membership/people/${card.personId}`}
-                  className="flex flex-col gap-1 rounded-[8px] border border-border bg-surface p-2.5 hover:border-accent-br"
-                >
-                  <span className="flex items-center gap-2">
-                    <span
-                      aria-hidden="true"
-                      className="flex size-6 flex-none items-center justify-center rounded-full bg-chip text-[10px] font-semibold text-fg2"
-                    >
-                      {card.initials}
-                    </span>
-                    <span className="truncate text-[12.5px] font-medium text-fg">
-                      {card.fullName}
-                    </span>
-                  </span>
-                  <span className="text-[11px] text-fg3">{about(card)}</span>
-                  {card.atRisk && (
-                    <span className="text-[11px] text-warn-fg">
-                      Missed two in a row — worth a visit
-                    </span>
-                  )}
-                  {card.readyToApply && (
-                    <span className="text-[11px] text-pos">Ready to apply</span>
-                  )}
-                </Link>
-              ))}
-              {column.count > column.cards.length && (
-                <Link
-                  href={link({ view: 'table', stage: column.stage })}
-                  className="px-1 text-[11.5px] text-accent hover:underline"
-                >
-                  All {column.count} in the table
-                </Link>
-              )}
-            </section>
-          ))}
-        </div>
-      )}
 
       {listed && (
         <>
