@@ -4,12 +4,10 @@ import { initialsOf } from '@/shared';
 import { serverApi } from '@/lib/api/server';
 import { getMe } from '@/lib/api/me';
 import { can } from '@/lib/auth/guards';
-import { cn } from '@/lib/cn';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
 import { STAGE_LABEL, type Stage } from '@/modules/membership/types';
 import { PrayerFilters } from './PrayerFilters';
-import { THEMES, themeLabel, themesOf, type Theme } from './themes';
 
 export const metadata: Metadata = { title: 'Prayers' };
 
@@ -36,14 +34,13 @@ const dayOf = (iso: string) =>
 /**
  * The prayer requests people wrote when they registered, for the pastors
  * alone (D34), newest first and gathered by month. Each reads as a quote,
- * with who wrote it and how to call them. The themes are guessed from the
- * words, to pray through one at a time. Nothing here can be changed,
+ * with who wrote it and how to call them. Nothing here can be changed,
  * printed or exported; a card opens the person in Membership.
  */
 export default async function PrayersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; month?: string; theme?: string }>;
+  searchParams: Promise<{ q?: string; month?: string }>;
 }) {
   const me = await getMe();
   if (!can(me, 'membership.prayers.read')) return <ForbiddenState what="prayer requests" />;
@@ -56,12 +53,7 @@ export default async function PrayersPage({
   const { cards, more } = await serverApi<{ cards: PrayerCard[]; more: boolean }>(
     `/membership/prayers${query.size ? `?${query}` : ''}`,
   );
-  const theme = THEMES.find(([key]) => key === params.theme)?.[0];
-
-  const withThemes = cards.map((c) => ({ ...c, themes: themesOf(c.prayer) }));
-  const counts = new Map<Theme, number>();
-  for (const c of withThemes) for (const t of c.themes) counts.set(t, (counts.get(t) ?? 0) + 1);
-  const shown = theme ? withThemes.filter((c) => c.themes.includes(theme)) : withThemes;
+  const shown = cards;
 
   const months: [string, typeof shown][] = [];
   for (const c of shown) {
@@ -71,12 +63,7 @@ export default async function PrayersPage({
     else months.push([m, [c]]);
   }
 
-  const themeHref = (key?: Theme) => {
-    const next = new URLSearchParams(query);
-    if (key) next.set('theme', key);
-    return `/membership/prayers${next.size ? `?${next}` : ''}`;
-  };
-  const filtered = query.size > 0 || !!theme;
+  const filtered = query.size > 0;
 
   return (
     <>
@@ -87,19 +74,6 @@ export default async function PrayersPage({
 
       <div className="mb-5 flex flex-col gap-3 rounded-[14px] border border-border bg-surface p-4">
         <PrayerFilters />
-        {counts.size > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="mr-1 text-[11.5px] text-fg3">Pray through</span>
-            <Link href={themeHref()} className={chip(!theme)}>
-              Everything <span className="tabular-nums text-fg3">{cards.length}</span>
-            </Link>
-            {THEMES.filter(([key]) => counts.has(key)).map(([key, label]) => (
-              <Link key={key} href={themeHref(key)} className={chip(theme === key)}>
-                {label} <span className="tabular-nums text-fg3">{counts.get(key)}</span>
-              </Link>
-            ))}
-          </div>
-        )}
       </div>
 
       {shown.length === 0 ? (
@@ -131,18 +105,6 @@ export default async function PrayersPage({
                     <p className="relative font-serif text-[17px] leading-relaxed whitespace-pre-line text-fg">
                       {c.prayer}
                     </p>
-                    {c.themes.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {c.themes.map((t) => (
-                          <span
-                            key={t}
-                            className="rounded-full bg-chip px-2 py-0.5 text-[10.5px] text-fg2"
-                          >
-                            {themeLabel(t)}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                     <div className="flex items-center gap-2.5 border-t border-border2 pt-3">
                       <span
                         aria-hidden="true"
@@ -198,9 +160,3 @@ export default async function PrayersPage({
     </>
   );
 }
-
-const chip = (on: boolean) =>
-  cn(
-    'rounded-full border px-2.5 py-1 text-[12px]',
-    on ? 'border-accent-br bg-chip text-fg' : 'border-border text-fg2 hover:bg-hover',
-  );
