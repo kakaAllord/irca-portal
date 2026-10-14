@@ -59,10 +59,11 @@ export default function MembershipGuidePage() {
         <p>
           <strong>Membership → Applications</strong> has two lists:{' '}
           <strong>Waiting application approval</strong> and <strong>Waiting confirmation</strong>.
-          Each row shows whether they are saved and baptised. The pastors and the administrators
-          approve with the round tick, or reject with the round cross. Once approved,{' '}
-          <strong>Confirm</strong> whenever the pastors are ready; it gives the new member their
-          number, and they move to Members. Enter one by hand with{' '}
+          Each row shows whether they are saved and baptised. The pastors
+          approve with the round tick, or reject with the round cross. Once approved, an
+          administrator chooses <strong>Confirm by message</strong> and sends the person an
+          approved message; sending it confirms them, gives them their member number, and moves
+          them to Members. Enter one by hand with{' '}
           <strong>+ New application</strong>; ticking &ldquo;join the church&rdquo; on the form
           applies by itself.
         </p>
