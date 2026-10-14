@@ -37,11 +37,6 @@ export const departmentsModule = defineModule({
       kind: 'read',
       label: "See each department's summary, in numbers",
     },
-    'departments.people.impersonate': {
-      kind: 'read',
-      label: 'View the portal as a leader or member of a department (read-only)',
-      hint: 'For the pastors (D36): never as a pastor, and never as someone in no department.',
-    },
   },
   systemRoles: [
     {
@@ -49,11 +44,7 @@ export const departmentsModule = defineModule({
       name: 'Departments overseer',
       description:
         'For pastors and administrators: every department, its leaders and members, and its summary, read-only.',
-      permissions: [
-        'departments.all.read',
-        'departments.summary.read',
-        'departments.people.impersonate',
-      ],
+      permissions: ['departments.all.read', 'departments.summary.read'],
     },
   ],
   nav: [
