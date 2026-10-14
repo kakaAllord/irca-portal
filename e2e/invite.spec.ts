@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 
+const DEV = { email: 'allordcodes@gmail.com', password: 'dev-password-123' };
 const ADMIN = { email: 'admin@irca.local', password: 'admin-password-123' };
 const NEW_PERSON = { email: `new.person.${Date.now()}@example.com`, name: 'New Person' };
 const NEW_PASSWORD = 'kilimanjaro sunrise tea';
@@ -59,24 +60,34 @@ test.describe('inviting someone', () => {
     await expect(theirPage.getByRole('link', { name: 'Users' })).toBeVisible();
     await expect(theirPage.getByRole('link', { name: 'Members' })).toBeVisible();
 
-    // The administrator views as them: the same pages, with no buttons.
+    // The administrator has no way to view as them (D59)...
     await page.goto('/admin/users');
     await page.getByPlaceholder('Search name or email…').fill(NEW_PERSON.email);
-    // Filtering is debounced and re-rendered on the server, so wait for the row.
-    // By email: earlier runs may have left other people with the same name.
     const theirRow = page.getByRole('link', { name: new RegExp(NEW_PERSON.email) });
     await expect(theirRow).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: /^View as/ })).toHaveCount(0);
     await theirRow.click();
-    // Their own page: People's rows each carry an arrow too.
     await page.waitForURL(/\/admin\/users\/[0-9a-f-]+$/);
-    await page.getByRole('button', { name: /^View as/ }).click();
-    // Exactly, because Next's route announcer repeats the page's title.
-    await expect(page.getByText(`Viewing as ${NEW_PERSON.name}`, { exact: true })).toBeVisible();
-    await page.goto('/admin/users');
-    await expect(page.getByRole('button', { name: '+ Invite person' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^View as/ })).toHaveCount(0);
 
-    await page.getByRole('status').getByRole('button', { name: 'Back to my view' }).click();
-    await expect(page.getByText(/Viewing as/)).toHaveCount(0);
+    // ...the developer does, and sees the same pages with no buttons.
+    const devPage = await browser.newPage();
+    await devPage.goto('/login');
+    await devPage.getByLabel('Email').fill(DEV.email);
+    await devPage.getByLabel('Password').fill(DEV.password);
+    await devPage.getByRole('button', { name: 'Sign in' }).click();
+    await devPage.goto('/dev/access');
+    await devPage
+      .getByRole('button', { name: `View as ${NEW_PERSON.name}` })
+      .first()
+      .click();
+    // Exactly, because Next's route announcer repeats the page's title.
+    await expect(devPage.getByText(`Viewing as ${NEW_PERSON.name}`, { exact: true })).toBeVisible();
+    await devPage.goto('/admin/users');
+    await expect(devPage.getByRole('button', { name: '+ Invite person' })).toHaveCount(0);
+
+    await devPage.getByRole('status').getByRole('button', { name: 'Back to my view' }).click();
+    await expect(devPage.getByText(/Viewing as/)).toHaveCount(0);
 
     // Nothing tells the person they were viewed as.
     await theirPage.goto('/account');
@@ -84,6 +95,7 @@ test.describe('inviting someone', () => {
     // Nothing says they were looked at (the sidebar's Overview is not a sign).
     await expect(theirPage.getByText(/viewed|viewing as|view as/i)).toHaveCount(0);
 
+    await devPage.close();
     await theirs.close();
   });
 });

@@ -54,8 +54,13 @@ export const membershipModule = defineModule({
     },
     'membership.applications.decide': {
       kind: 'write',
-      label: 'Approve, reject and confirm applications',
-      hint: 'The pastors and the administrators (D46).',
+      label: 'Approve or reject applications',
+      hint: 'The pastors only (D59). The administrators confirm what they approved.',
+    },
+    'membership.applications.confirm': {
+      kind: 'write',
+      label: 'Confirm approved applications by sending the person a message',
+      hint: 'The administrators only (D59). Sending a template to the applicant is what confirms them and gives them a member number.',
     },
     'membership.discipleship.read': { kind: 'read', label: 'See foundation classes and progress' },
     'membership.discipleship.manage': {
@@ -73,7 +78,7 @@ export const membershipModule = defineModule({
     {
       key: 'membership.pastor',
       name: 'Pastor',
-      description: 'Everything, including prayer requests and deciding applications.',
+      description: 'Everything, including prayer requests and approving or rejecting applications.',
       permissions: [
         'membership.dashboard.read',
         'membership.people.read',
@@ -94,7 +99,8 @@ export const membershipModule = defineModule({
     {
       key: 'membership.administrator',
       name: 'Membership administrator',
-      description: 'Everything a pastor can, except reading prayer requests (D34, D46).',
+      description:
+        'Everything a pastor can, except reading prayer requests and approving applications; confirms the ones pastors approved (D34, D59).',
       permissions: [
         'membership.dashboard.read',
         'membership.people.read',
@@ -104,7 +110,7 @@ export const membershipModule = defineModule({
         'membership.notes.write',
         'membership.applications.read',
         'membership.applications.submit',
-        'membership.applications.decide',
+        'membership.applications.confirm',
         'membership.discipleship.read',
         'membership.discipleship.manage',
         'membership.insights.read',

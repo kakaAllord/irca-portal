@@ -1,4 +1,4 @@
-import type { BudgetLine } from '@/shared';
+import type { BudgetLine, CardStyle, PaymentMethod } from '@/shared';
 import type { Stage } from '../membership/types';
 
 /** What the departments API sends, as the portal reads it (D28). */
@@ -154,9 +154,14 @@ export type DepartmentSummary = {
       id: string;
       name: string;
       method: string;
+      kind: PaymentMethod;
+      /** The card template it chose, if any. */
+      cardStyle: CardStyle | null;
       currency: string;
       balance: string | null;
     }[];
+    /** The last twelve months to today, whatever period is shown. */
+    trend: { month: string; income: string; expense: string }[];
     /** Every department with a budget this month. */
     budgets: { month: string; lines: BudgetLine[] };
   };

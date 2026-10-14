@@ -75,9 +75,8 @@ export default function GettingStartedPage() {
 
       <Step n={6} title='What "viewing as" means'>
         <p>
-          To answer a question like &ldquo;why can&apos;t I see this page?&rdquo;, an administrator
-          (or, for the people in departments, a pastor) can look at the portal exactly as you see
-          it, from an arrow beside your name. While they do, nothing can be changed: not by them,
+          To answer a question like &ldquo;why can&apos;t I see this page?&rdquo;, the developer
+          can look at the portal exactly as you see it, from an arrow beside your name. While they do, nothing can be changed: not by them,
           and not in your name. The portal is built so that it cannot be. If someone says they
           viewed the portal as you, that is all it means.
         </p>

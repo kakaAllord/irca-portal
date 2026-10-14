@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const CLERK = { email: 'mhazini2@irca.local', password: 'manager-password-123' };
 const MANAGER = { email: 'mhazini@irca.local', password: 'manager-password-123' };
+const DEV = { email: 'allordcodes@gmail.com', password: 'dev-password-123' };
 const ADMIN = { email: 'admin@irca.local', password: 'admin-password-123' };
 
 async function signIn(page: Page, who: { email: string; password: string }) {
@@ -134,15 +135,10 @@ test.describe('recording money', () => {
   });
 
   test('viewing as a clerk shows the books with no way to change them', async ({ page }) => {
-    await signIn(page, ADMIN);
-    await page.goto('/admin/users');
-    await page.getByPlaceholder('Search name or email…').fill(CLERK.email);
-    const row = page.getByRole('link', { name: new RegExp(CLERK.email) });
-    await expect(row).toBeVisible({ timeout: 15_000 });
-    await row.click();
-    // Their own page: People's rows each carry an arrow too.
-    await page.waitForURL(/\/admin\/users\/[0-9a-f-]+$/);
-    await page.getByRole('button', { name: /^View as/ }).click();
+    // Only the developer views as someone (D59), from Dev → Access.
+    await signIn(page, DEV);
+    await page.goto('/dev/access');
+    await page.getByRole('button', { name: 'View as Neema Mollel' }).first().click();
     await expect(page.getByText('Viewing as Neema Mollel', { exact: true })).toBeVisible();
 
     await page.goto('/finance/transactions');
