@@ -10,13 +10,28 @@ import { ArchiveButton } from '@/modules/departments/ArchiveButton';
 import { DepartmentDrawer } from '@/modules/departments/DepartmentDrawer';
 import { LeadersSection } from '@/modules/departments/LeadersSection';
 import { MembersSection } from '@/modules/departments/MembersSection';
-import type { DepartmentDetail, DepartmentRow } from '@/modules/departments/types';
+import { DepartmentSummary } from '@/modules/departments/DepartmentSummary';
+import type {
+  DepartmentDetail,
+  DepartmentRow,
+  DepartmentSummary as Summary,
+  SummaryPeriod,
+} from '@/modules/departments/types';
 import { portalChoices } from '@/modules/departments/portals';
 
 export const metadata: Metadata = { title: 'Department' };
 
-export default async function DepartmentPage({ params }: { params: Promise<{ id: string }> }) {
+const PERIODS: SummaryPeriod[] = ['this_month', 'last_month', 'this_year'];
+
+export default async function DepartmentPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ period?: string }>;
+}) {
   const { id } = await params;
+  const { period } = await searchParams;
   const me = await getMe();
   if (!can(me, 'admin.departments.read')) return <ForbiddenState what="departments" />;
 
@@ -25,6 +40,11 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
     serverApi<DepartmentRow[]>('/admin/departments'),
   ]);
   const manage = can(me, 'admin.departments.manage');
+  // Administrators oversee every department, so they see its numbers too.
+  const asked = PERIODS.includes(period as SummaryPeriod) ? period : 'this_month';
+  const summary = can(me, 'departments.summary.read')
+    ? await serverApi<Summary>(`/departments/${id}/summary?period=${asked}`)
+    : null;
 
   return (
     <>
@@ -74,6 +94,9 @@ export default async function DepartmentPage({ params }: { params: Promise<{ id:
       )}
 
       <div className="flex flex-col gap-7">
+        {summary && (
+          <DepartmentSummary summary={summary} me={me} path={`/admin/departments/${id}`} />
+        )}
         <LeadersSection department={department} />
         <MembersSection department={department} permission="admin.departments.manage" />
       </div>
