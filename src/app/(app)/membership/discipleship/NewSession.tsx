@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/Select';
 import { SubmitButton } from '@/components/ui/SubmitButton';
 import { Can } from '@/lib/session';
 import type { Group } from '@/modules/membership/types';
-import { CopyLink, type NoticeData } from './Sessions';
+import type { NoticeData } from './Sessions';
 
 /** As the API takes them, and no more. */
 const MAX_REMINDERS = 6;
@@ -66,7 +66,6 @@ export function NewSession({
   const [form, setForm] = useState(blank);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [made, setMade] = useState<{ number: number; attendUrl: string } | null>(null);
 
   const group = groups.find((g) => g.id === form.groupId);
   const usable = notice?.templates.filter((t) => t.usable) ?? [];
@@ -81,22 +80,19 @@ export function NewSession({
           body: { familyId: form.familyId || null },
         });
       }
-      const res = await clientApi<{ number: number; attendUrl: string }>(
-        `/membership/discipleship/groups/${form.groupId}/sessions`,
-        {
-          method: 'POST',
-          body: {
-            title: form.title,
-            // The admin's own clock, which is the church's.
-            startsAt: new Date(form.startsAt).toISOString(),
-            meetUrl: form.meetUrl,
-            reminders: form.familyId
-              ? form.reminders.filter(Boolean).map((r) => new Date(r).toISOString())
-              : [],
-          },
+      await clientApi(`/membership/discipleship/groups/${form.groupId}/sessions`, {
+        method: 'POST',
+        body: {
+          title: form.title,
+          // The admin's own clock, which is the church's.
+          startsAt: new Date(form.startsAt).toISOString(),
+          meetUrl: form.meetUrl,
+          reminders: form.familyId
+            ? form.reminders.filter(Boolean).map((r) => new Date(r).toISOString())
+            : [],
         },
-      );
-      setMade(res);
+      });
+      setOpen(false);
       router.push(`/membership/discipleship?view=sessions&group=${form.groupId}`);
       router.refresh();
     } catch (err) {
@@ -108,7 +104,6 @@ export function NewSession({
 
   const close = () => {
     setOpen(false);
-    setMade(null);
     setError(null);
   };
 
@@ -127,115 +122,98 @@ export function NewSession({
       <Drawer
         open={open}
         onClose={close}
-        title={made ? `Session ${made.number} is ready` : 'Add a session'}
-        description={
-          made
-            ? 'Paste its attendance link into the Meet chat when the session ends.'
-            : 'Everyone taking the class in the group is texted the day, the time and the Meet link.'
-        }
+        title="Add a session"
+        description="Everyone taking the class in the group is texted the day, the time and the Meet link."
         footer={
-          made ? (
-            <Button onClick={close}>Done</Button>
-          ) : (
-            <>
-              <Button variant="ghost" onClick={close}>
-                Cancel
-              </Button>
-              <SubmitButton
-                loading={busy}
-                missing={[
-                  ...(form.groupId ? [] : ['Group']),
-                  ...(form.startsAt ? [] : ['Day and time']),
-                  ...(form.meetUrl.trim() ? [] : ['Meet link']),
-                  ...(form.familyId && form.reminders.some((r) => !r) ? ['Reminder time'] : []),
-                ]}
-                onClick={save}
-              >
-                Add the session
-              </SubmitButton>
-            </>
-          )
+          <>
+            <Button variant="ghost" onClick={close}>
+              Cancel
+            </Button>
+            <SubmitButton
+              loading={busy}
+              missing={[
+                ...(form.groupId ? [] : ['Group']),
+                ...(form.startsAt ? [] : ['Day and time']),
+                ...(form.meetUrl.trim() ? [] : ['Meet link']),
+                ...(form.familyId && form.reminders.some((r) => !r) ? ['Reminder time'] : []),
+              ]}
+              onClick={save}
+            >
+              Add the session
+            </SubmitButton>
+          </>
         }
       >
-        {made ? (
-          <div className="flex flex-col gap-3 text-[12.5px] text-fg2">
-            <p className="break-all rounded-[8px] border border-border bg-surface2 px-3 py-2 font-mono text-[12px] text-fg">
-              {made.attendUrl}
-            </p>
-            <CopyLink url={made.attendUrl} />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {error && <Alert tone="error">{error}</Alert>}
-            <Select
-              label="Group attending"
-              required
-              value={form.groupId}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  groupId: e.target.value,
-                  // Each group meets on its own link.
-                  meetUrl: groups.find((g) => g.id === e.target.value)?.meetUrl ?? '',
-                })
-              }
-              options={[
-                { value: '', label: 'Choose a group' },
-                ...groups.map((g) => ({ value: g.id, label: g.name })),
-              ]}
-            />
-            <Input
-              label="Title"
-              placeholder="Prayer and the Word (optional)"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
-            <Input
-              label="Day and time"
-              type="datetime-local"
-              required
-              value={form.startsAt}
-              onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
-            />
-            <Input
-              label="Google Meet link"
-              required
-              placeholder="https://meet.google.com/abc-defg-hij"
-              value={form.meetUrl}
-              onChange={(e) => setForm({ ...form, meetUrl: e.target.value })}
-              hint={
-                group?.meetUrl
-                  ? 'The group’s link. Change it only for a different meeting; the new one is kept for the group’s next session.'
-                  : 'Kept for the group’s next sessions.'
-              }
-            />
-            {notice && (
-              <div className="flex flex-col gap-1.5">
-                <Select
-                  label="Text the group with"
-                  value={form.familyId}
-                  onChange={(e) => setForm({ ...form, familyId: e.target.value })}
-                  options={[
-                    { value: '', label: 'Do not text the group' },
-                    ...usable.map((t) => ({ value: t.familyId, label: t.name })),
-                  ]}
-                />
-                <p className="text-[11.5px] text-fg3">
-                  {usable.length === 0
-                    ? 'No approved template fits yet. Write one in Communications → Templates using only the first name, the group, the date, the time and Where.'
-                    : 'An approved template from Communications. Its blanks are filled with the group, the date, the time, and the Meet link as Where. Remembered for the next session.'}
-                </p>
-              </div>
-            )}
-            {notice && form.familyId && (
-              <Reminders
-                startsAt={form.startsAt}
-                value={form.reminders}
-                onChange={(reminders) => setForm({ ...form, reminders })}
+        <div className="flex flex-col gap-4">
+          {error && <Alert tone="error">{error}</Alert>}
+          <Select
+            label="Group"
+            required
+            value={form.groupId}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                groupId: e.target.value,
+                // Each group meets on its own link.
+                meetUrl: groups.find((g) => g.id === e.target.value)?.meetUrl ?? '',
+              })
+            }
+            options={[
+              { value: '', label: 'Choose a group' },
+              ...groups.map((g) => ({ value: g.id, label: g.name })),
+            ]}
+          />
+          <Input
+            label="Title"
+            placeholder="Prayer and the Word (optional)"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+          />
+          <Input
+            label="Day and time"
+            type="datetime-local"
+            required
+            value={form.startsAt}
+            onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
+          />
+          <Input
+            label="Google Meet link"
+            required
+            placeholder="https://meet.google.com/abc-defg-hij"
+            value={form.meetUrl}
+            onChange={(e) => setForm({ ...form, meetUrl: e.target.value })}
+            hint={
+              group?.meetUrl
+                ? 'The group’s link. Change it only for a different meeting; the new one is kept for the group’s next session.'
+                : 'Kept for the group’s next sessions.'
+            }
+          />
+          {notice && (
+            <div className="flex flex-col gap-1.5">
+              <Select
+                label="Text the group with"
+                value={form.familyId}
+                onChange={(e) => setForm({ ...form, familyId: e.target.value })}
+                options={[
+                  { value: '', label: 'Do not text the group' },
+                  ...usable.map((t) => ({ value: t.familyId, label: t.name })),
+                ]}
               />
-            )}
-          </div>
-        )}
+              <p className="text-[11.5px] text-fg3">
+                {usable.length === 0
+                  ? 'No approved template fits yet. Write one in Communications → Templates using only the first name, the group, the date, the time and Where.'
+                  : 'An approved template from Communications. Its blanks are filled with the group, the date, the time, and the Meet link as Where. Remembered for the next session.'}
+              </p>
+            </div>
+          )}
+          {notice && form.familyId && (
+            <Reminders
+              startsAt={form.startsAt}
+              value={form.reminders}
+              onChange={(reminders) => setForm({ ...form, reminders })}
+            />
+          )}
+        </div>
       </Drawer>
     </Can>
   );

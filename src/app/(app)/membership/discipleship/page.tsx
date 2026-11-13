@@ -11,7 +11,7 @@ import { cn } from '@/lib/cn';
 import { STAGE_LABEL, type Group, type Stage } from '@/modules/membership/types';
 import { GroupPicker } from './GroupPicker';
 import { NewSession } from './NewSession';
-import { NewGroup, Register } from './Register';
+import { NewGroup } from './NewGroup';
 import { Sessions, type NoticeData, type SessionsData } from './Sessions';
 
 export const metadata: Metadata = { title: 'Discipleship' };
@@ -22,44 +22,24 @@ type Card = {
   initials: string;
   group: string | null;
   enrollmentId: string | null;
-  progress: { attended: number; of: number } | null;
-  atRisk: boolean;
   baptised: boolean;
   memberNumber: number | null;
-  readyToApply: boolean;
 };
 type Listed = {
-  sessions: number;
   counts: { stage: Stage; count: number }[];
   total: number;
   rows: (Card & { stage: Stage })[];
 };
-export type RegisterData = {
-  sessions: number;
-  /** How many attended sessions finish the class. */
-  needed: number;
-  /** When each numbered session was, for those that have a date. */
-  dates: Record<string, string>;
-  rows: {
-    enrollmentId: string;
-    personId: string;
-    fullName: string;
-    initials: string;
-    completed: boolean;
-    marks: ('ATTENDED' | 'MISSED' | null)[];
-    attended: number;
-    atRisk: boolean;
-  }[];
-};
 
-const VIEWS = ['table', 'sessions', 'register'] as const;
+const VIEWS = ['table', 'sessions'] as const;
 type View = (typeof VIEWS)[number];
 const PAGE_SIZE = 50;
 
 /**
  * From the decision to follow Christ to full membership. A group of new
- * converts meets on its own day and Meet link; its sessions, and the
- * attendance counted for it, are chosen with the group at the top.
+ * converts meets on its own day and Meet link, and its sessions are chosen
+ * with the group at the top. Attendance is not kept (D61): someone finishes
+ * the class when they are moved on to awaiting baptism from their record.
  */
 export default async function DiscipleshipPage({
   searchParams,
@@ -89,10 +69,6 @@ export default async function DiscipleshipPage({
             pageSize: String(PAGE_SIZE),
           })}`,
         )
-      : null;
-  const register =
-    view === 'register' && group
-      ? await serverApi<RegisterData>(`/membership/discipleship/register?group=${group}`)
       : null;
   const sessions =
     view === 'sessions' && group
@@ -153,7 +129,6 @@ export default async function DiscipleshipPage({
               [
                 ['table', 'People', people],
                 ['sessions', 'Sessions', view === 'sessions'],
-                ['register', 'Class register', view === 'register'],
               ] as const
             ).map(([key, label, on]) => (
               <Link
@@ -188,7 +163,7 @@ export default async function DiscipleshipPage({
           {listed.rows.length === 0 ? (
             <EmptyState title="Nobody here yet." />
           ) : (
-            <Table head={['Person', 'Stage', 'Group', 'Class', 'Baptised', '']}>
+            <Table head={['Person', 'Stage', 'Group', 'Baptised']}>
               {listed.rows.map((r) => (
                 <Row key={r.personId}>
                   <Cell>
@@ -210,18 +185,7 @@ export default async function DiscipleshipPage({
                     {r.memberNumber && <span className="text-fg3"> · No. {r.memberNumber}</span>}
                   </Cell>
                   <Cell className="text-fg2">{r.group ?? 'None'}</Cell>
-                  <Cell nowrap className="tabular-nums text-fg2">
-                    {r.progress ? `${r.progress.attended} of ${r.progress.of}` : 'Not started'}
-                  </Cell>
                   <Cell className="text-fg2">{r.baptised ? 'Yes' : 'Not yet'}</Cell>
-                  <Cell nowrap>
-                    {r.atRisk && (
-                      <span className="text-[11.5px] text-warn-fg">Missed two in a row</span>
-                    )}
-                    {r.readyToApply && (
-                      <span className="text-[11.5px] text-pos">Ready to apply</span>
-                    )}
-                  </Cell>
                 </Row>
               ))}
             </Table>
@@ -242,15 +206,6 @@ export default async function DiscipleshipPage({
         ) : (
           <EmptyState title="No groups yet">
             Start a group with + New group, then add its sessions with + New session.
-          </EmptyState>
-        ))}
-
-      {view === 'register' &&
-        (register ? (
-          <Register groupId={group!} data={register} />
-        ) : (
-          <EmptyState title="No groups yet">
-            Start a group, then sign people up from their record.
           </EmptyState>
         ))}
     </>
