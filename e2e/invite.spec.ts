@@ -36,6 +36,7 @@ test.describe('inviting someone', () => {
     await page.getByLabel('Email').fill(ADMIN.email);
     await page.getByLabel('Password').fill(ADMIN.password);
     await page.getByRole('button', { name: 'Sign in' }).click();
+    await expect(page.getByRole('navigation', { name: 'Portals' })).toBeVisible();
     await page.getByRole('link', { name: 'Users' }).click();
     await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible();
 
@@ -76,6 +77,9 @@ test.describe('inviting someone', () => {
     await devPage.getByLabel('Email').fill(DEV.email);
     await devPage.getByLabel('Password').fill(DEV.password);
     await devPage.getByRole('button', { name: 'Sign in' }).click();
+    // Wait for the sign-in to land: going on at once cancels it, and the
+    // developer is sent back to the login page.
+    await expect(devPage.getByRole('navigation', { name: 'Portals' })).toBeVisible();
     await devPage.goto('/dev/access');
     await devPage
       .getByRole('button', { name: `View as ${NEW_PERSON.name}` })
