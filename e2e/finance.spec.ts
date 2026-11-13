@@ -65,6 +65,10 @@ test.describe('recording money', () => {
       .getByRole('navigation', { name: 'Portals' })
       .getByRole('link', { name: 'Transactions', exact: true })
       .click();
+    // The overview has the same button: clicking before Transactions has
+    // arrived opens the drawer there, and the arrival throws it away.
+    await page.waitForURL(/\/finance\/transactions$/);
+    await expect(page.getByRole('heading', { name: 'Transactions', level: 1 })).toBeVisible();
     // The form is the right-hand drawer, as every other form in the portal is.
     // A click that lands before the page has hydrated opens nothing, so it is
     // tried again the way a person would, until the drawer is there.
