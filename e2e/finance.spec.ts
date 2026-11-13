@@ -220,4 +220,37 @@ test.describe('recording money', () => {
     const { readFileSync } = await import('node:fs');
     expect(readFileSync(file).subarray(0, 5).toString()).toBe('%PDF-');
   });
+  test('the finance report downloads as a PDF and as an Excel workbook', async ({ page }) => {
+    await signIn(page, CLERK);
+    await page.goto('/finance/reports');
+    await page.getByRole('link', { name: 'Finance report' }).click();
+    await expect(page.getByRole('heading', { name: 'Finance report' })).toBeVisible();
+    await expect(page.getByText('Monthly performance overview')).toBeVisible();
+    const { readFileSync } = await import('node:fs');
+    const name = /^IRCA-finance-report-\d{4}-\d{2}(-to-\d{4}-\d{2})?\.(pdf|xlsx)$/;
+
+    const [workbook] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('link', { name: 'Download Excel' }).click(),
+    ]);
+    expect(workbook.suggestedFilename()).toMatch(name);
+    expect(workbook.suggestedFilename()).toMatch(/\.xlsx$/);
+    // An .xlsx is a ZIP archive.
+    expect(
+      readFileSync(await workbook.path())
+        .subarray(0, 2)
+        .toString(),
+    ).toBe('PK');
+
+    const [pdf] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('link', { name: 'Download PDF' }).click(),
+    ]);
+    expect(pdf.suggestedFilename()).toMatch(name);
+    expect(
+      readFileSync(await pdf.path())
+        .subarray(0, 5)
+        .toString(),
+    ).toBe('%PDF-');
+  });
 });
