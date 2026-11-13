@@ -42,7 +42,7 @@ export const GUIDES: GuideEntry[] = [
     href: '/help/membership',
     title: 'Membership',
     about:
-      'Finding a person, moving them along the journey, notes, applications, and the foundation class register.',
+      'Finding a person, the salvation and baptism lists, moving them along the journey, notes, applications, and the foundation class.',
     audience: (has) => has('membership.people.read'),
     for: ['/membership'],
   },
