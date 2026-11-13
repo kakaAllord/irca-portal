@@ -16,6 +16,7 @@ import {
   useMayRemind,
   type Recipients,
 } from '@/modules/membership/components/RemindActions';
+import { labelOf } from '@/shared/registration';
 import { STAGE_LABEL, day, type PersonDetail, type PersonRow } from '@/modules/membership/types';
 
 /**
@@ -92,7 +93,7 @@ export function MembersTable({ rows, tab }: { rows: PersonRow[]; tab: string }) 
           'Phone',
           'Registered',
           'Age',
-          'Interested in',
+          'Chose on the form',
           'Heard via',
           '',
         ]}
@@ -189,7 +190,9 @@ function MemberRows({
           <span className="text-fg2">{person.ageGroup || '—'}</span>
         </Cell>
         <Cell>
-          <span className="text-fg2">{person.interestedIn.join(', ') || '—'}</span>
+          <span className="text-fg2">
+            {person.interestedIn.map((v) => labelOf('interest', v, 'en')).join(', ') || '—'}
+          </span>
         </Cell>
         <Cell>
           <span className="text-fg2">{person.heardVia.join(', ') || '—'}</span>
