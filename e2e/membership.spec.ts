@@ -72,7 +72,7 @@ test.describe('from the registration form to the Membership portal', () => {
     // has run since the form wrote: the API catches up with it on the
     // pastor's own requests (D51), so the first page already has them.
     await signIn(page, PASTOR);
-    // Registrations opens on those wanting to join; this visitor is on All.
+    // Registrations opens on everyone who registered (D61).
     await page.goto('/membership/people?tab=all');
     await page.getByPlaceholder('Search name or phone…').fill(name);
     const row = page.getByRole('button', { name: `Open ${name}` });
@@ -96,5 +96,50 @@ test.describe('from the registration form to the Membership portal', () => {
     // Not hidden: never sent. The page says whose it is.
     await expect(page.getByText('Prayer requests are only shown to the pastors.')).toBeVisible();
     await expect(page.getByText(prayer)).toHaveCount(0);
+  });
+
+  test('the pastor moves them from salvation to baptism and off the list with one switch (D61)', async ({
+    page,
+  }) => {
+    await signIn(page, PASTOR);
+
+    // On Registrations they are among those not joining the church.
+    await page.goto('/membership/people');
+    await page.getByRole('button', { name: /^Not joining church/ }).click();
+    await page.getByPlaceholder('Search name or phone…').fill(name);
+    await expect(page.getByRole('button', { name: `Open ${name}` })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // They asked to give their life to Christ: Need salvation.
+    await page
+      .getByRole('navigation', { name: 'Portals' })
+      .getByRole('link', { name: 'Salvation & baptism' })
+      .click();
+    await expect(page.getByRole('heading', { name: 'Salvation & baptism' })).toBeVisible();
+    await page.getByPlaceholder('Search name or phone…').fill(name);
+    const saved = page.getByRole('switch', { name: `${name} is saved` });
+    await expect(saved).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('Give my life to Christ')).toBeVisible();
+
+    await saved.click();
+    await expect(page.getByText(`${name} is saved, and moved to Need baptism.`)).toBeVisible();
+    await expect(saved).toHaveCount(0);
+
+    // Undo puts them back where they were.
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(saved).toBeVisible();
+    await saved.click();
+    await expect(saved).toHaveCount(0);
+
+    // On Need baptism now; baptised takes them off the list.
+    await page.getByRole('link', { name: /^Need baptism/ }).click();
+    const baptised = page.getByRole('switch', { name: `${name} is baptised` });
+    await expect(baptised).toBeVisible({ timeout: 15_000 });
+    await baptised.click();
+    await expect(page.getByText(`${name} is baptised, and off the list.`)).toBeVisible();
+    await expect(baptised).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByText('Nobody is waiting for baptism.')).toBeVisible();
   });
 });
