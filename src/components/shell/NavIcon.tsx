@@ -51,6 +51,13 @@ const PATHS: Record<Name, React.ReactNode> = {
       <circle cx="12" cy="18.5" r="2" />
     </>
   ),
+  // A cross and a drop of water: salvation, then baptism.
+  salvation: (
+    <>
+      <path d="M10 3v18M5 8.5h10" />
+      <path d="M18.5 13c-1.5 1.9-2.3 3.1-2.3 4.2a2.3 2.3 0 0 0 4.6 0c0-1.1-.8-2.3-2.3-4.2Z" />
+    </>
+  ),
   // A rising line: what the form tells you.
   insights: (
     <>

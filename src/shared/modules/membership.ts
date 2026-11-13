@@ -133,6 +133,14 @@ export const membershipModule = defineModule({
       permission: 'membership.people.read',
     },
     {
+      // Who still needs salvation, and who needs baptism, each moved on with
+      // a switch (D61): the list the pastors asked to keep easily.
+      label: 'Salvation & baptism',
+      href: '/membership/salvation',
+      icon: 'salvation',
+      permission: 'membership.people.read',
+    },
+    {
       // Only those the pastors have confirmed, with their member numbers.
       label: 'Members',
       href: '/membership/members',
