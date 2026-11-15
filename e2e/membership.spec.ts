@@ -143,3 +143,21 @@ test.describe('from the registration form to the Membership portal', () => {
     await expect(page.getByText('Nobody is waiting for baptism.')).toBeVisible();
   });
 });
+
+test('a member row opens in place anywhere it is clicked, as on Registrations', async ({
+  page,
+}) => {
+  await signIn(page, PASTOR);
+  await page.goto('/membership/members');
+  const row = page.locator('tbody tr').first();
+  // Clicking a plain cell, not the name, opens the record under the row.
+  await row.locator('td').nth(5).click();
+  const full = page.getByRole('link', { name: 'Open full record →' });
+  await expect(full).toBeVisible();
+  await expect(page).toHaveURL(/\/membership\/members/);
+  await page.getByRole('button', { name: /^Close / }).click();
+  await expect(full).toHaveCount(0);
+  await row.click();
+  await full.click();
+  await expect(page).toHaveURL(/\/membership\/people\/[0-9a-f-]+$/);
+});

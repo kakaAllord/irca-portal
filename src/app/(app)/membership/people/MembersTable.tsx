@@ -234,7 +234,8 @@ function MemberRows({
   );
 }
 
-function Expanded({ id }: { id: string }) {
+/** What a row shows when it opens: the record, fetched then. Members opens the same. */
+export function Expanded({ id }: { id: string }) {
   const [person, setPerson] = useState<PersonDetail | null>(null);
 
   useEffect(() => {
