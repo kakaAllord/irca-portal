@@ -188,8 +188,9 @@ function NavBox({ icon, on }: { icon: NavItem['icon']; on: boolean }) {
 
 /**
  * Departments, for the pastors and administrators who oversee them (14.2): a
- * chevron opens every department by name under the item. The list comes with
- * the session, so opening it asks the server nothing.
+ * chevron opens, by name, the departments that have a portal of their own.
+ * The rest are on the Departments page the item itself opens. The list comes
+ * with the session, so opening it asks the server nothing.
  */
 function DepartmentsNav({
   item,
@@ -203,10 +204,12 @@ function DepartmentsNav({
   onNavigate?: () => void;
 }) {
   const me = useMe();
-  const entries = (me.departments ?? []).map((d) => ({
-    label: d.name,
-    href: `/departments/${d.id}`,
-  }));
+  const entries = (me.departments ?? [])
+    .filter((d) => d.moduleKey)
+    .map((d) => ({
+      label: d.name,
+      href: `/departments/${d.id}`,
+    }));
   return (
     <NavGroup
       item={item}

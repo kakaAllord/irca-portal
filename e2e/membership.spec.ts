@@ -161,3 +161,30 @@ test('a member row opens in place anywhere it is clicked, as on Registrations', 
   await full.click();
   await expect(page).toHaveURL(/\/membership\/people\/[0-9a-f-]+$/);
 });
+
+test('the Departments dropdown lists only departments with a portal; the page lists them all', async ({
+  page,
+}) => {
+  await signIn(page, PASTOR);
+  // The page: every department, a portal's name beside those that have one.
+  await page.goto('/departments/all');
+  const cards = page.locator('ul a[href^="/departments/"]');
+  await expect(cards.first()).toBeVisible();
+  const all = await cards.evaluateAll((links) =>
+    links.map((a) => ({
+      name: a.querySelector('span')!.textContent!.trim(),
+      portal: a.querySelectorAll('span').length > 1,
+    })),
+  );
+  const withPortal = all.filter((d) => d.portal).map((d) => d.name);
+  expect(withPortal.length).toBeGreaterThan(0);
+
+  const nav = page.getByRole('navigation', { name: 'Portals' });
+  await nav
+    .getByRole('button', { name: /departments/i })
+    .first()
+    .click();
+  const listed = nav.locator('a[href^="/departments/"]:not([href="/departments/all"])');
+  await expect(listed.first()).toBeVisible();
+  expect((await listed.allTextContents()).map((t) => t.trim()).sort()).toEqual(withPortal.sort());
+});
