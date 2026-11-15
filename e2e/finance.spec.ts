@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const CLERK = { email: 'mhazini2@irca.local', password: 'manager-password-123' };
 const MANAGER = { email: 'mhazini@irca.local', password: 'manager-password-123' };
+const DEV = { email: 'allordcodes@gmail.com', password: 'dev-password-123' };
 const ADMIN = { email: 'admin@irca.local', password: 'admin-password-123' };
 
 async function signIn(page: Page, who: { email: string; password: string }) {
@@ -64,6 +65,10 @@ test.describe('recording money', () => {
       .getByRole('navigation', { name: 'Portals' })
       .getByRole('link', { name: 'Transactions', exact: true })
       .click();
+    // The overview has the same button: clicking before Transactions has
+    // arrived opens the drawer there, and the arrival throws it away.
+    await page.waitForURL(/\/finance\/transactions$/);
+    await expect(page.getByRole('heading', { name: 'Transactions', level: 1 })).toBeVisible();
     // The form is the right-hand drawer, as every other form in the portal is.
     // A click that lands before the page has hydrated opens nothing, so it is
     // tried again the way a person would, until the drawer is there.
@@ -134,15 +139,10 @@ test.describe('recording money', () => {
   });
 
   test('viewing as a clerk shows the books with no way to change them', async ({ page }) => {
-    await signIn(page, ADMIN);
-    await page.goto('/admin/users');
-    await page.getByPlaceholder('Search name or email…').fill(CLERK.email);
-    const row = page.getByRole('link', { name: new RegExp(CLERK.email) });
-    await expect(row).toBeVisible({ timeout: 15_000 });
-    await row.click();
-    // Their own page: People's rows each carry an arrow too.
-    await page.waitForURL(/\/admin\/users\/[0-9a-f-]+$/);
-    await page.getByRole('button', { name: /^View as/ }).click();
+    // Only the developer views as someone (D59), from Dev → Access.
+    await signIn(page, DEV);
+    await page.goto('/dev/access');
+    await page.getByRole('button', { name: 'View as Neema Mollel' }).first().click();
     await expect(page.getByText('Viewing as Neema Mollel', { exact: true })).toBeVisible();
 
     await page.goto('/finance/transactions');
@@ -223,5 +223,38 @@ test.describe('recording money', () => {
     const file = await download.path();
     const { readFileSync } = await import('node:fs');
     expect(readFileSync(file).subarray(0, 5).toString()).toBe('%PDF-');
+  });
+  test('the finance report downloads as a PDF and as an Excel workbook', async ({ page }) => {
+    await signIn(page, CLERK);
+    await page.goto('/finance/reports');
+    await page.getByRole('link', { name: 'Finance report' }).click();
+    await expect(page.getByRole('heading', { name: 'Finance report' })).toBeVisible();
+    await expect(page.getByText('Monthly performance overview')).toBeVisible();
+    const { readFileSync } = await import('node:fs');
+    const name = /^IRCA-finance-report-\d{4}-\d{2}(-to-\d{4}-\d{2})?\.(pdf|xlsx)$/;
+
+    const [workbook] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('link', { name: 'Download Excel' }).click(),
+    ]);
+    expect(workbook.suggestedFilename()).toMatch(name);
+    expect(workbook.suggestedFilename()).toMatch(/\.xlsx$/);
+    // An .xlsx is a ZIP archive.
+    expect(
+      readFileSync(await workbook.path())
+        .subarray(0, 2)
+        .toString(),
+    ).toBe('PK');
+
+    const [pdf] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('link', { name: 'Download PDF' }).click(),
+    ]);
+    expect(pdf.suggestedFilename()).toMatch(name);
+    expect(
+      readFileSync(await pdf.path())
+        .subarray(0, 5)
+        .toString(),
+    ).toBe('%PDF-');
   });
 });

@@ -6,10 +6,29 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { FilterFunnel } from '@/components/ui/FilterFunnel';
 import { cn } from '@/lib/cn';
+import { JOINING, SERVING, labelOf } from '@/shared/registration';
 
-type Field = 'salvation' | 'baptism' | 'gender' | 'age' | 'lives' | 'source';
+/** The answers to "What are you interested in?", as the API stores them. */
+const INTERESTS = [
+  'Salvation',
+  'Baptism',
+  JOINING,
+  'Renewing my commitment',
+  SERVING,
+  'Nothing for now',
+];
+
+type Field = 'chose' | 'salvation' | 'baptism' | 'gender' | 'age' | 'lives' | 'source';
 
 const FIELDS: Record<Field, { label: string; options: { value: string; label: string }[] }> = {
+  // The form's "What are you interested in?", in the form's own words.
+  chose: {
+    label: 'Chose on the form',
+    options: [
+      { value: 'any', label: 'Anything' },
+      ...INTERESTS.map((value) => ({ value, label: labelOf('interest', value, 'en') })),
+    ],
+  },
   salvation: {
     label: 'Salvation',
     options: [
@@ -73,7 +92,7 @@ const FIELDS: Record<Field, { label: string; options: { value: string; label: st
  */
 export function PeopleFilters({
   path,
-  fields = ['salvation', 'baptism', 'gender', 'age', 'lives', 'source'],
+  fields = ['chose', 'salvation', 'baptism', 'gender', 'age', 'lives', 'source'],
   tabs,
   defaultTab = 'all',
   counts = {},
@@ -120,17 +139,19 @@ export function PeopleFilters({
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
-        <FilterFunnel on={on} onClear={() => set(Object.fromEntries(fields.map((f) => [f, ''])))}>
-          {fields.map((f) => (
-            <Select
-              key={f}
-              label={FIELDS[f].label}
-              value={value(f)}
-              onChange={(e) => set({ [f]: e.target.value })}
-              options={FIELDS[f].options}
-            />
-          ))}
-        </FilterFunnel>
+        {fields.length > 0 && (
+          <FilterFunnel on={on} onClear={() => set(Object.fromEntries(fields.map((f) => [f, ''])))}>
+            {fields.map((f) => (
+              <Select
+                key={f}
+                label={FIELDS[f].label}
+                value={value(f)}
+                onChange={(e) => set({ [f]: e.target.value })}
+                options={FIELDS[f].options}
+              />
+            ))}
+          </FilterFunnel>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">

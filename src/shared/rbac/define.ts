@@ -29,6 +29,7 @@ export type NavIcon =
   | 'dashboard'
   | 'applications'
   | 'discipleship'
+  | 'salvation'
   | 'insights'
   | 'overview'
   | 'transactions'

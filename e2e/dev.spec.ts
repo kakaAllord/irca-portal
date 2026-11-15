@@ -68,25 +68,20 @@ test.describe('the dev console', () => {
   });
 
   test('viewing as someone, then reading it back in the view-as log and the logs', async ({
-    browser,
     page,
   }) => {
-    // An administrator views as the finance clerk from her own page.
-    const admin = await browser.newPage();
-    await signIn(admin, ADMIN);
-    await admin.getByRole('link', { name: 'Users', exact: true }).click();
-    await admin.getByRole('link', { name: 'Neema Mollel mhazini2@irca.local' }).click();
-    await admin.getByRole('button', { name: 'View as Neema' }).click();
-    await expect(admin.getByText('Viewing as Neema Mollel', { exact: true })).toBeVisible();
-    await admin.getByRole('status').getByRole('button', { name: 'Back to my view' }).click();
-    await expect(admin.getByText('Viewing as Neema Mollel', { exact: true })).toHaveCount(0);
-    await admin.close();
-
+    // Only the developer views as someone (D59): from Dev → Access, as the finance clerk.
     await signIn(page, DEV);
+    await page.getByRole('link', { name: 'Access', exact: true }).click();
+    await page.getByRole('button', { name: 'View as Neema Mollel' }).click();
+    await expect(page.getByText('Viewing as Neema Mollel', { exact: true })).toBeVisible();
+    await page.getByRole('status').getByRole('button', { name: 'Back to my view' }).click();
+    await expect(page.getByText('Viewing as Neema Mollel', { exact: true })).toHaveCount(0);
+
     // The view-as log is the only place that session shows up: a list now,
     // each session opening to the pages seen in it (docs/plan/11, 11.6).
     await page.getByRole('link', { name: 'View-as log' }).click();
-    const session = page.getByRole('button', { name: /IRCA Admin viewed as Neema Mollel/ });
+    const session = page.getByRole('button', { name: /viewed as Neema Mollel/ });
     await session.first().click();
     const drawer = page.getByRole('dialog');
     await expect(drawer.getByText('Neema Mollel <mhazini2@irca.local>')).toBeVisible();

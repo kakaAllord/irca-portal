@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 
 export type SessionsData = {
@@ -13,9 +11,6 @@ export type SessionsData = {
     title: string;
     startsAt: string;
     meetUrl: string;
-    attendUrl: string;
-    attended: number;
-    selfMarked: number;
     notice: string | null;
     reminders: {
       id: string;
@@ -41,8 +36,8 @@ const when = (iso: string) =>
   });
 
 /**
- * A group's sessions on Google Meet. Each has its attendance link, made with
- * it, to paste into the Meet chat; people mark themselves there. A session
+ * A group's sessions on Google Meet. Attendance is not kept (D61): a session
+ * is its day, its Meet link and the text that told the group. A session
  * starts with the group's Meet link, and saving another link makes it the
  * group's link from then on. Sessions are added from the page's header.
  */
@@ -72,8 +67,8 @@ export function Sessions({ data }: { data: SessionsData }) {
 
       {data.sessions.length === 0 ? (
         <p className="text-[12.5px] text-fg3">
-          No sessions yet. Add the first with + New session; it gets its attendance link straight
-          away.
+          No sessions yet. Add the first with + New session, and the group is texted the day, the
+          time and the Meet link.
         </p>
       ) : (
         <ol className="flex flex-col divide-y divide-border2">
@@ -86,10 +81,7 @@ export function Sessions({ data }: { data: SessionsData }) {
                 <span className="text-[12.5px] font-medium text-fg">
                   {s.title || `Session ${s.number}`}
                 </span>
-                <span className="text-[11.5px] text-fg3">
-                  {when(s.startsAt)} · {s.attended} of {data.people} came
-                  {s.selfMarked > 0 && ` (${s.selfMarked} marked themselves)`}
-                </span>
+                <span className="text-[11.5px] text-fg3">{when(s.startsAt)}</span>
                 <span
                   className={
                     s.notice === 'sent' ? 'text-[11.5px] text-pos' : 'text-[11.5px] text-fg3'
@@ -131,32 +123,10 @@ export function Sessions({ data }: { data: SessionsData }) {
                   Open Meet
                 </a>
               )}
-              <CopyLink url={s.attendUrl} />
             </li>
           ))}
         </ol>
       )}
     </section>
-  );
-}
-
-/** Copies a session's attendance link, to paste into the Meet chat. */
-export function CopyLink({ url, label = 'Copy attendance link' }: { url: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Button
-      size="sm"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(url);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        } catch {
-          window.prompt('Copy this link', url);
-        }
-      }}
-    >
-      {copied ? 'Copied' : label}
-    </Button>
   );
 }

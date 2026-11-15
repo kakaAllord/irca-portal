@@ -14,13 +14,13 @@ export default function PastorsGuidePage() {
         <p>
           <strong>Membership → Applications</strong> lists the people asking to become members. Open
           one, read what they told the church, and approve it with the round tick, or reject it with
-          the round cross and a reason. The administrators can decide them too, so an application
-          does not have to wait for you; the activity log keeps who decided each one.
+          the round cross and a reason. Deciding applications is the pastors&apos; work alone; the
+          activity log keeps who decided each one.
         </p>
         <p>
-          Approved applications wait in the <strong>Waiting confirmation</strong> tab until you
-          choose <strong>Confirm</strong>, whenever you are ready. Confirming gives them their
-          member number.
+          Approved applications wait in the <strong>Waiting confirmation</strong> tab for an
+          administrator, who confirms them by sending the person a welcome message. Sending it
+          gives them their member number.
         </p>
       </Step>
 

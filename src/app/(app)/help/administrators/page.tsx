@@ -59,14 +59,15 @@ export default function AdministratorsGuidePage() {
 
       <Step n={5} title="Membership, and seeing as someone">
         <p>
-          You can do everything in Membership the pastors can, deciding applications included:
-          approve, reject, and confirm whenever the pastors are ready. Prayer requests are the
-          pastors&apos; alone.
+          The pastors approve or reject applications. Once one is approved, you confirm it:
+          in <strong>Membership → Applications → Waiting confirmation</strong> choose{' '}
+          <strong>Confirm by message</strong>, pick an approved message, and send. The message
+          going out is the confirmation, and it gives the new member their number. Prayer requests
+          are the pastors&apos; alone.
         </p>
         <p>
-          To see what someone sees, press the arrow beside their name in People. Nothing can be
-          changed while you look, and they are not told. <strong>Back to my view</strong>, in the
-          yellow bar, returns you. You cannot view as a pastor.
+          Viewing the portal as another person is the developer&apos;s tool alone; if you need
+          someone to see what a person sees, ask the developer.
         </p>
       </Step>
     </Guide>

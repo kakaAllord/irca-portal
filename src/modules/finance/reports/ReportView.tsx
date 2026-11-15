@@ -1,5 +1,6 @@
 import { cn } from '@/lib/cn';
 import { Logo } from '@/components/Logo';
+import { ReportChart, type ReportChartData } from './ReportChart';
 
 /** A report as the API describes it: the same description the PDF prints. */
 export type ReportDoc = {
@@ -13,6 +14,7 @@ export type ReportDoc = {
   sections: {
     heading?: string;
     tiles?: { label: string; value: string; note?: string }[];
+    chart?: ReportChartData;
     table?: {
       columns: { label: string; align?: 'left' | 'right' }[];
       rows: string[][];
@@ -67,6 +69,7 @@ export function ReportView({ report, church }: { report: ReportDoc; church: stri
                 ))}
               </div>
             )}
+            {section.chart && <ReportChart chart={section.chart} />}
             {section.table &&
               (section.table.rows.length === 0 && section.table.empty ? (
                 <p className="text-[12.5px] text-fg3">{section.table.empty}</p>

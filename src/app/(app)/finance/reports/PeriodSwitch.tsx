@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/cn';
 
-export type ReportKind = 'day' | 'week' | 'month' | 'year' | 'custom' | 'position';
+export type ReportKind = 'day' | 'week' | 'month' | 'year' | 'custom' | 'position' | 'months';
 
 const TABS: { kind: ReportKind; label: string }[] = [
   { kind: 'day', label: 'Day' },
@@ -14,6 +14,7 @@ const TABS: { kind: ReportKind; label: string }[] = [
   { kind: 'year', label: 'Year' },
   { kind: 'custom', label: 'Custom' },
   { kind: 'position', label: 'Position' },
+  { kind: 'months', label: 'Finance report' },
 ];
 
 /** The period switch and its date. Everything lives in the URL, so a report can be sent as a link. */
@@ -23,12 +24,15 @@ export function PeriodSwitch({
   from,
   to,
   today,
+  months,
 }: {
   kind: ReportKind;
   date: string;
   from: string;
   to: string;
   today: string;
+  /** The finance report's first and last month, "2026-05". */
+  months: { from: string; to: string };
 }) {
   const router = useRouter();
   const go = (params: Record<string, string>) =>
@@ -44,7 +48,11 @@ export function PeriodSwitch({
           <Link
             key={tab.kind}
             href={`/finance/reports?${new URLSearchParams(
-              tab.kind === 'custom' ? { kind: 'custom', from, to } : { kind: tab.kind, date },
+              tab.kind === 'custom'
+                ? { kind: 'custom', from, to }
+                : tab.kind === 'months'
+                  ? { kind: 'months', from: months.from, to: months.to }
+                  : { kind: tab.kind, date },
             )}`}
             aria-current={tab.kind === kind ? 'page' : undefined}
             scroll={false}
@@ -59,7 +67,26 @@ export function PeriodSwitch({
           </Link>
         ))}
       </nav>
-      {kind === 'custom' ? (
+      {kind === 'months' ? (
+        <>
+          <Input
+            label="From the month"
+            type="month"
+            value={months.from}
+            max={months.to}
+            onChange={(e) => e.target.value && go({ kind, from: e.target.value, to: months.to })}
+          />
+          <Input
+            label="To the month"
+            type="month"
+            value={months.to}
+            min={months.from}
+            max={today.slice(0, 7)}
+            onChange={(e) => e.target.value && go({ kind, from: months.from, to: e.target.value })}
+          />
+          <p className="pb-2 text-[12px] text-fg3">Up to 12 months, a ledger for each.</p>
+        </>
+      ) : kind === 'custom' ? (
         <>
           <Input
             label="From"

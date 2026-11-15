@@ -6,11 +6,10 @@ import { can } from '@/lib/auth/guards';
 import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
 import { Pager } from '@/components/ui/Pager';
-import { Table, Row, Cell } from '@/components/ui/Table';
 import { PeopleFilters } from '@/modules/membership/components/PeopleFilters';
-import { RowRemind } from '@/modules/membership/components/RemindActions';
-import { day, type PersonRow } from '@/modules/membership/types';
+import { type PersonRow } from '@/modules/membership/types';
 import { MembersActions } from '../people/MembersActions';
+import { MembersList } from './MembersList';
 
 export const metadata: Metadata = { title: 'Members' };
 
@@ -22,7 +21,7 @@ const PAGE_SIZE = 50;
 /**
  * The church's confirmed members, by member number. Everyone else who has
  * registered is on Registrations; someone appears here once the pastors
- * confirm their application.
+ * confirm their application. A row opens in place, as on Registrations.
  */
 export default async function MembersPage({
   searchParams,
@@ -63,42 +62,7 @@ export default async function MembersPage({
             </Link>
           </EmptyState>
         ) : (
-          <Table head={['No.', 'Member', 'Phone', 'Gender and age', 'Lives in', 'Confirmed', '']}>
-            {data.rows.map((m) => (
-              <Row key={m.id}>
-                <Cell className="tabular-nums text-fg2">{m.memberNumber ?? '—'}</Cell>
-                <Cell>
-                  <Link
-                    href={`/membership/people/${m.id}`}
-                    className="flex items-center gap-2.5 font-medium text-fg hover:underline"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="flex size-7 flex-none items-center justify-center rounded-full bg-chip text-[11px] font-semibold text-fg2"
-                    >
-                      {m.initials}
-                    </span>
-                    {m.fullName || 'Unknown'}
-                  </Link>
-                </Cell>
-                <Cell className="tabular-nums text-fg2">{m.phone || '—'}</Cell>
-                <Cell className="text-fg2">
-                  {[m.gender, m.ageGroup].filter(Boolean).join(' · ') || '—'}
-                </Cell>
-                <Cell className="text-fg2">{m.livesIn || '—'}</Cell>
-                <Cell className="text-fg2">{m.confirmedAt ? day(m.confirmedAt) : '—'}</Cell>
-                <Cell nowrap>
-                  {/* A member whose form is not finished can be sent their link (D55). */}
-                  {!m.complete && m.hasRegistration && (
-                    <span className="flex items-center justify-end gap-2">
-                      <span className="text-[11px] text-warn-fg">Form not finished</span>
-                      <RowRemind personId={m.id} name={m.fullName} />
-                    </span>
-                  )}
-                </Cell>
-              </Row>
-            ))}
-          </Table>
+          <MembersList rows={data.rows} />
         )}
         <Pager
           path="/membership/members"

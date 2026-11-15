@@ -15,17 +15,25 @@ export const metadata: Metadata = { title: 'Registrations' };
 
 type Listed = { rows: PersonRow[]; total: number; tabCounts: Record<string, number> };
 
-const KEYS = ['tab', 'q', 'salvation', 'baptism', 'gender', 'age', 'lives', 'source'] as const;
+const KEYS = [
+  'tab',
+  'q',
+  'chose',
+  'salvation',
+  'baptism',
+  'gender',
+  'age',
+  'lives',
+  'source',
+] as const;
 const PAGE_SIZE = 50;
 
+// Who needs salvation or baptism has its own page, Salvation & baptism (D61).
 const TABS = [
-  ['all', 'All'],
+  ['all', 'Everyone'],
   ['joining', 'Joining church'],
-  ['salvation', 'Salvation'],
-  ['baptism', 'Baptism'],
-  ['volunteers', 'Volunteers'],
-  ['new_converts', 'New converts'],
-  ['incomplete', 'Incomplete'],
+  ['not_joining', 'Not joining church'],
+  ['incomplete', 'Did not finish'],
 ] as const;
 
 /**
@@ -42,27 +50,27 @@ export default async function RegistrationsPage({
     return <ForbiddenState what="the people of this church" />;
 
   const params = await searchParams;
-  // Opens on those who want to join the church; All is one tap away.
-  const query = new URLSearchParams({ tab: params.tab ?? 'joining' });
+  // Opens on everyone who registered (D61); each group is one tap away.
+  const query = new URLSearchParams({ tab: params.tab ?? 'all' });
   for (const key of KEYS) if (params[key]) query.set(key, params[key]);
   const page = Math.max(1, Number(params.page) || 1);
   const data = await serverApi<Listed>(
     `/membership/people?${query}&page=${page}&pageSize=${PAGE_SIZE}`,
   );
 
-  const tab = params.tab ?? 'joining';
+  const tab = params.tab ?? 'all';
 
   return (
     <>
       <PageHeader
         title="Registrations"
-        subtitle="Everyone who has registered, and everyone an administrator has added."
+        subtitle="Everyone who has registered and what they chose on the form, and everyone an administrator has added."
         actions={<MembersActions query={query.toString()} />}
       />
       <PeopleFilters
         path="/membership/people"
         tabs={TABS}
-        defaultTab="joining"
+        defaultTab="all"
         counts={data.tabCounts}
         shown={data.rows.length}
         total={data.total}

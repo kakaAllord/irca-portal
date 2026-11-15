@@ -9,6 +9,8 @@ import { PageHeader } from '@/components/shell/PageHeader';
 import { EmptyState, ForbiddenState } from '@/components/shell/States';
 import { RecordButtons } from '@/modules/finance/components/RecordButtons';
 import { Bars } from '@/modules/finance/components/Bars';
+import { Flow } from '@/modules/finance/components/Flow';
+import { Trend, monthName } from '@/modules/finance/components/Trend';
 import { BankCard } from '@/modules/finance/components/BankCard';
 import { EntryRow } from '@/modules/finance/components/EntryRow';
 import { cn } from '@/lib/cn';
@@ -239,127 +241,12 @@ function Panel({
   );
 }
 
-/** Money in or out for the month, and how it compares with the month before. */
-function Flow({
-  label,
-  value,
-  change,
-  good,
-  tone,
-}: {
-  label: string;
-  value: string;
-  change: number | null;
-  /** Which way is good news: more income, or fewer expenses. */
-  good: 'up' | 'down';
-  tone: 'in' | 'out';
-}) {
-  const better = change !== null && (good === 'up' ? change >= 0 : change <= 0);
-  return (
-    <div className="flex items-center gap-3 bg-surface p-5">
-      <span
-        aria-hidden="true"
-        className={cn(
-          'flex size-11 flex-none items-center justify-center rounded-full',
-          tone === 'in' ? 'bg-pos-bg text-pos' : 'bg-danger-bg text-danger',
-        )}
-      >
-        <svg viewBox="0 0 16 16" className="size-5" fill="none" stroke="currentColor">
-          <path
-            d={tone === 'in' ? 'M8 13V3M4 7l4-4 4 4' : 'M8 3v10M4 9l4 4 4-4'}
-            strokeWidth="1.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </span>
-      <span className="flex min-w-0 flex-col">
-        <span className="text-[11.5px] text-fg3">{label}</span>
-        <span className="text-[19px] leading-tight font-semibold tabular-nums text-fg">
-          {value}
-        </span>
-        {change !== null && (
-          <span
-            className={cn(
-              'mt-0.5 w-fit rounded-full px-1.5 text-[11px] font-medium tabular-nums',
-              better ? 'bg-pos-bg text-pos' : 'bg-danger-bg text-danger',
-            )}
-          >
-            {change >= 0 ? '▲' : '▼'} {Math.abs(change)}% on last month
-          </span>
-        )}
-      </span>
-    </div>
-  );
-}
-
 /** Left out entirely when last month was zero: there is no "+∞%". */
 function change(now: string, before: string): number | null {
   const previous = Number(before);
   if (previous <= 0) return null;
   return Math.round(((Number(now) - previous) / previous) * 100);
 }
-
-function Trend({
-  rows,
-  currency,
-  current,
-}: {
-  rows: { month: string; income: string; expense: string }[];
-  currency: string;
-  current: string;
-}) {
-  const highest = Math.max(1, ...rows.flatMap((r) => [Number(r.income), Number(r.expense)]));
-  return (
-    <div className="flex items-end gap-1 overflow-x-auto">
-      {rows.map((row) => {
-        const name = new Date(`${row.month}-01T00:00:00Z`).toLocaleDateString('en-GB', {
-          month: 'short',
-          timeZone: 'UTC',
-        });
-        const label = `${monthName(row.month)}: in ${formatMoney(row.income, currency)}, out ${formatMoney(row.expense, currency)}`;
-        return (
-          <Link
-            key={row.month}
-            href={`/finance?month=${row.month}`}
-            title={label}
-            aria-label={label}
-            className={cn(
-              'flex min-w-[44px] flex-1 flex-col items-center gap-1.5 rounded-[10px] px-1 pt-2 pb-1.5 hover:bg-hover',
-              row.month === current && 'bg-chip',
-            )}
-          >
-            <span className="flex h-32 items-end gap-1" aria-hidden="true">
-              <span
-                className="w-3 rounded-t-[4px] bg-pos"
-                style={{ height: `${Math.max((Number(row.income) / highest) * 100, 1)}%` }}
-              />
-              <span
-                className="w-3 rounded-t-[4px] bg-[#b4532a]"
-                style={{ height: `${Math.max((Number(row.expense) / highest) * 100, 1)}%` }}
-              />
-            </span>
-            <span
-              className={cn(
-                'text-[11px]',
-                row.month === current ? 'font-semibold text-fg' : 'text-fg3',
-              )}
-            >
-              {name}
-            </span>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
-const monthName = (month: string) =>
-  new Date(`${month}-01T00:00:00Z`).toLocaleDateString('en-GB', {
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
 
 /** The month we are in, as `YYYY-MM`. Months sort correctly as strings in this shape. */
 function thisMonth() {

@@ -39,8 +39,11 @@ const TABS: [Status, string][] = [
 
 const STEPS = [
   ['Application submitted', 'From the form, or entered by an administrator.'],
-  ['Waiting application approval', 'A pastor or an administrator approves it, or not.'],
-  ['Waiting confirmation', 'Approved, and waiting for the pastors to confirm.'],
+  ['Waiting application approval', 'A pastor approves it, or not.'],
+  [
+    'Waiting confirmation',
+    'Approved. An administrator confirms by sending them a message, and that makes them a member.',
+  ],
 ] as const;
 
 /** Asking to become a member, and what was decided. */

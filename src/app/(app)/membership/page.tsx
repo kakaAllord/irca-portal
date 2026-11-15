@@ -32,7 +32,6 @@ type Dashboard = {
         initials: string;
         savedAt: string | null;
         group: string | null;
-        progress: { attended: number; of: number } | null;
       }[]
     | null;
   heard: { label: string; count: number; share: number }[];
@@ -54,6 +53,14 @@ export default async function MembershipDashboard() {
   if (!can(me, 'membership.dashboard.read'))
     return <ForbiddenState what="the membership dashboard" />;
   const data = await serverApi<Dashboard>('/membership/dashboard');
+  // Who is waiting for salvation or baptism, counted as that page counts them.
+  const waiting = can(me, 'membership.people.read')
+    ? (
+        await serverApi<{ tabCounts: Record<string, number> }>(
+          '/membership/people?tab=needs_salvation&pageSize=1',
+        )
+      ).tabCounts
+    : null;
   const today = new Date().toLocaleDateString('en-GB', {
     weekday: 'long',
     day: 'numeric',
@@ -86,11 +93,26 @@ export default async function MembershipDashboard() {
         actions={<DashboardExport />}
       />
 
+      {waiting && (
+        <Link
+          href="/membership/salvation"
+          className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[10px] border border-accent-br bg-chip px-4 py-3 text-[13px] text-fg hover:bg-hover"
+        >
+          <span>
+            <strong className="tabular-nums">{waiting.needs_salvation ?? 0}</strong> need salvation
+          </span>
+          <span>
+            <strong className="tabular-nums">{waiting.needs_baptism ?? 0}</strong> need baptism
+          </span>
+          <span className="ml-auto text-[12px] text-accent">Open Salvation &amp; baptism →</span>
+        </Link>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {tile('Total registrations', data.stats.registrations)}
         {tile('Joining church', data.stats.joining)}
-        {tile('Salvation', data.stats.salvation)}
-        {tile('Baptism', data.stats.baptism)}
+        {tile('Saved', data.stats.salvation)}
+        {tile('Baptised', data.stats.baptism)}
         {tile('This month', data.stats.thisMonth)}
       </div>
 
@@ -175,17 +197,6 @@ export default async function MembershipDashboard() {
                         .filter(Boolean)
                         .join(' · ') || 'Not in a class yet'}
                     </span>
-                    {c.progress && (
-                      <span
-                        className="mt-1 block h-1.5 overflow-hidden rounded-full bg-chip"
-                        aria-hidden="true"
-                      >
-                        <span
-                          className="block h-full rounded-full bg-accent"
-                          style={{ width: `${(c.progress.attended / c.progress.of) * 100}%` }}
-                        />
-                      </span>
-                    )}
                   </span>
                 </li>
               ))}

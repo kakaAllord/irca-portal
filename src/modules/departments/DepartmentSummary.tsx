@@ -1,7 +1,11 @@
 import Link from 'next/link';
-import { formatMoney, type MeResponse } from '@/shared';
+import { formatMoney, type FinanceAccountView, type MeResponse } from '@/shared';
 import { can } from '@/lib/auth/guards';
 import { cn } from '@/lib/cn';
+import { Bars } from '@/modules/finance/components/Bars';
+import { BankCard } from '@/modules/finance/components/BankCard';
+import { Flow } from '@/modules/finance/components/Flow';
+import { Trend } from '@/modules/finance/components/Trend';
 import type { DepartmentSummary as Summary, SummaryPeriod, SummaryTile } from './types';
 
 const PERIODS: { key: SummaryPeriod; label: string; against: string }[] = [
@@ -68,48 +72,84 @@ export function DepartmentSummary({
 
       {summary.finance && (
         <>
-          <Tiles>
-            <Tile
-              label="Income"
-              value={money(summary.finance.income.value)}
-              change={change(summary.finance.income, period.against)}
-              href={
-                can(me, 'finance.transactions.read')
-                  ? `/finance/transactions?kind=INCOME&${range}`
-                  : undefined
-              }
-            />
-            <Tile
-              label="Offerings"
-              value={money(summary.finance.offerings.value)}
-              change={change(summary.finance.offerings, period.against)}
-            />
-            <Tile
-              label="Expenses"
-              value={money(summary.finance.expenses.value)}
-              change={change(summary.finance.expenses, period.against)}
-              href={
-                can(me, 'finance.transactions.read')
-                  ? `/finance/transactions?kind=EXPENSE&${range}`
-                  : undefined
-              }
-            />
-            <Tile
-              label="Income less expenses"
-              value={money(summary.finance.net.value)}
-              change={change(summary.finance.net, period.against)}
-            />
-          </Tiles>
+          <FinanceHero
+            finance={summary.finance}
+            money={money}
+            period={period}
+            net={summary.finance.net}
+            href={
+              can(me, 'finance.transactions.read')
+                ? (kind) => `/finance/transactions?kind=${kind}&${range}`
+                : undefined
+            }
+          />
           {summary.finance.accounts.length > 0 && (
-            <List
-              title="What each account holds today"
-              rows={summary.finance.accounts.map((a) => [
-                `${a.name} · ${a.method}`,
-                a.balance === null ? '—' : formatMoney(a.balance, a.currency),
-              ])}
-              empty=""
-            />
+            <section aria-labelledby="held" className="flex flex-col gap-2">
+              <h3 id="held" className="text-[13px] font-semibold text-fg">
+                What each account holds today
+              </h3>
+              <ul className="flex snap-x gap-4 overflow-x-auto pb-2">
+                {summary.finance.accounts.map((a) => (
+                  <li key={a.id} className="w-[240px] flex-none snap-start">
+                    <BankCard
+                      account={cardOf(a)}
+                      kind={a.kind}
+                      methodName={a.method}
+                      church={me.church?.code ?? 'Church'}
+                      showCurrency={summary.finance!.accounts.some((x) => x.currency !== currency)}
+                      compact
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Panel
+              title="Where it came from"
+              sub={`Income by source, ${period.label.toLowerCase()}`}
+            >
+              <Bars
+                rows={shares(summary.finance.incomeBySource)}
+                currency={currency}
+                tone="in"
+                empty="Nothing recorded in this period."
+              />
+            </Panel>
+            <Panel title="Where it went" sub={`Expenses by item, ${period.label.toLowerCase()}`}>
+              <Bars
+                rows={shares(summary.finance.expensesByItem)}
+                currency={currency}
+                tone="out"
+                empty="Nothing recorded in this period."
+              />
+            </Panel>
+          </div>
+          <Panel
+            title="The last twelve months"
+            sub="Income beside expenses, month by month"
+            aside={
+              <span className="flex items-center gap-3 text-[11.5px] text-fg3">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-[3px] bg-pos" /> In
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-2.5 rounded-[3px] bg-[#b4532a]" /> Out
+                </span>
+              </span>
+            }
+          >
+            <Trend
+              rows={summary.finance.trend}
+              currency={currency}
+              current={summary.finance.trend.at(-1)?.month ?? ''}
+              href={
+                can(me, 'finance.overview.read')
+                  ? (month) => `/finance?month=${month}`
+                  : () => undefined
+              }
+            />
+          </Panel>
           {summary.finance.budgets.lines.length > 0 && (
             <div className="flex flex-col gap-2">
               <h3 className="text-[13px] font-semibold text-fg">
@@ -131,18 +171,6 @@ export function DepartmentSummary({
               </ul>
             </div>
           )}
-          <div className="grid gap-3 lg:grid-cols-2">
-            <List
-              title="Income by source"
-              rows={summary.finance.incomeBySource.map((r) => [r.name, money(r.total)])}
-              empty="Nothing recorded in this period."
-            />
-            <List
-              title="Expenses by item"
-              rows={summary.finance.expensesByItem.map((r) => [r.name, money(r.total)])}
-              empty="Nothing recorded in this period."
-            />
-          </div>
           {summary.finance.pledgeCampaigns.length > 0 && (
             <div className="flex flex-col gap-2">
               <h3 className="text-[13px] font-semibold text-fg">Pledge campaigns</h3>
@@ -318,6 +346,133 @@ export function DepartmentSummary({
       </Tiles>
     </section>
   );
+}
+
+type Finance = NonNullable<Summary['finance']>;
+
+/** The net in large figures, with what came in and went out beside it. */
+function FinanceHero({
+  finance,
+  money,
+  period,
+  net,
+  href,
+}: {
+  finance: Finance;
+  money: (value: string) => string;
+  period: { label: string; against: string };
+  net: SummaryTile;
+  href?: (kind: 'INCOME' | 'EXPENSE') => string;
+}) {
+  const value = Number(net.value);
+  const delta = (t: SummaryTile) => {
+    const before = Number(t.previous);
+    return before > 0 ? Math.round(((Number(t.value) - before) / before) * 100) : null;
+  };
+  return (
+    <section
+      aria-label={`${period.label} in figures`}
+      className="grid gap-px overflow-hidden rounded-[18px] border border-border bg-border lg:grid-cols-[1.3fr_1fr_1fr]"
+    >
+      <div className="flex flex-col justify-center gap-1 bg-surface p-5">
+        <p className="text-[11px] font-semibold tracking-[0.14em] text-fg3 uppercase">
+          {value >= 0 ? 'Kept' : 'Short'}, {period.label.toLowerCase()}
+        </p>
+        <p
+          className={cn(
+            'text-[32px] leading-tight font-semibold tabular-nums',
+            value >= 0 ? 'text-fg' : 'text-danger',
+          )}
+        >
+          {money(String(net.value))}
+        </p>
+        <p className="text-[12px] text-fg3">
+          What came in less what went out, of which {money(finance.offerings.value)} was offerings.
+        </p>
+      </div>
+      <Flow
+        label="Came in"
+        value={money(finance.income.value)}
+        change={delta(finance.income)}
+        good="up"
+        tone="in"
+        against={period.against}
+      />
+      <Flow
+        label="Went out"
+        value={money(finance.expenses.value)}
+        change={delta(finance.expenses)}
+        good="down"
+        tone="out"
+        against={period.against}
+      />
+      {href && (
+        <p className="col-span-full flex gap-4 bg-surface px-5 py-2 text-[12px]">
+          <Link href={href('INCOME')} className="font-medium text-accent hover:underline">
+            See the income →
+          </Link>
+          <Link href={href('EXPENSE')} className="font-medium text-accent hover:underline">
+            See the expenses →
+          </Link>
+        </p>
+      )}
+    </section>
+  );
+}
+
+function Panel({
+  title,
+  sub,
+  aside,
+  children,
+}: {
+  title: string;
+  sub: string;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-[16px] border border-border bg-surface p-5">
+      <div className="mb-4 flex items-start justify-between gap-2">
+        <div>
+          <h3 className="text-[14px] font-semibold text-fg">{title}</h3>
+          <p className="text-[12px] text-fg3">{sub}</p>
+        </div>
+        {aside}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Each line's share of the whole, for the bars; the shares add to about a hundred. */
+function shares(rows: { name: string; total: string }[]) {
+  const whole = rows.reduce((sum, r) => sum + Number(r.total), 0);
+  return rows.map((r) => ({
+    id: r.name,
+    name: r.name,
+    total: r.total,
+    share: whole > 0 ? Math.round((Number(r.total) / whole) * 100) : 0,
+  }));
+}
+
+/** The summary's slim account as the card draws it. */
+function cardOf(a: Finance['accounts'][number]): FinanceAccountView {
+  return {
+    id: a.id,
+    methodId: '',
+    name: a.name,
+    currency: a.currency,
+    number: null,
+    openingBalance: '0',
+    openingDate: '',
+    isActive: true,
+    notes: '',
+    cardStyle: a.cardStyle,
+    balance: a.balance,
+    uses: 0,
+    openRequest: null,
+  };
 }
 
 function Tiles({ children }: { children: React.ReactNode }) {
